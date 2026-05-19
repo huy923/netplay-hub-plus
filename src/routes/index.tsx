@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Gamepad2, ShieldCheck, MonitorPlay, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAccess } from "@/contexts/access";
 
 export const Route = createFileRoute("/")({ component: Landing });
 
 function Landing() {
+  const { isLocalhost } = useAccess();
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
@@ -16,8 +19,9 @@ function Landing() {
             <span className="font-display text-lg font-semibold">CyberNet</span>
           </div>
           <div className="flex items-center gap-2">
-            <Link to="/login"><Button variant="ghost">Đăng nhập</Button></Link>
-            <Link to="/admin"><Button>Vào hệ thống</Button></Link>
+            {isLocalhost && <Link to="/login"><Button variant="ghost">Đăng nhập</Button></Link>}
+            {isLocalhost && <Link to="/admin"><Button>Vào hệ thống</Button></Link>}
+            {!isLocalhost && <span className="text-xs text-muted-foreground">Giao diện khách</span>}
           </div>
         </div>
       </header>
@@ -36,7 +40,7 @@ function Landing() {
               Bộ đôi web Admin/Thu ngân và giao diện khách PC. Gọi đồ, gia hạn giờ, thanh toán QR — tất cả trong một hệ thống tiếng Việt rõ ràng.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link to="/admin"><Button size="lg" className="bg-gradient-primary shadow-glow">Mở trang quản lý <ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+              {isLocalhost && <Link to="/admin"><Button size="lg" className="bg-gradient-primary shadow-glow">Mở trang quản lý <ArrowRight className="ml-2 h-4 w-4" /></Button></Link>}
               <Link to="/play"><Button size="lg" variant="outline">Giao diện khách (PC)</Button></Link>
             </div>
           </div>

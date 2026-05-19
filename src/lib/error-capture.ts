@@ -24,4 +24,5 @@ export function consumeLastCapturedError(): unknown {
   const { error } = lastCapturedError;
   lastCapturedError = undefined;
   return error;
+  
 }

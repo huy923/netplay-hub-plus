@@ -1,11 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 
-export const Route = createFileRoute("/admin/settings")({ component: Settings });
+export const Route = createFileRoute("/admin/settings")({
+  beforeLoad: async () => {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+    if (!isLocalhost) {
+      throw redirect({ to: "/play" });
+    }
+  },
+  component: Settings,
+});
 
 function Settings() {
   return (
@@ -43,7 +52,7 @@ function Settings() {
           </div>
         ))}
       </Card>
-      <div className="flex gap-2"><Button className="bg-gradient-primary">Lưu thay đổi</Button><Button variant="outline">Hủy</Button></div>
+      <div className="flex gap-2"><Button className="bg-gradient-primary" >Lưu thay đổi</Button><Button variant="outline">Hủy</Button></div>
     </div>
   );
 }

@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./prisma/dev.db"
+}
+
+model Machine {
+  id           String   @id @default(cuid())
+  name         String
+  area         String   // "VIP" | "Thường" | "PS5"
+  status       String   @default("idle") // "in_use" | "idle" | "maintenance"
+  customer     String?
+  startedAt    DateTime?
+  remaining    String?  // Duration string like "01:25"
+  pricePerHour Int      // in VND
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([area])
+  @@index([status])
+}
+
+model MenuItem {
+  id        String   @id @default(cuid())
+  name      String
+  category  String   // "Đồ uống" | "Ăn vặt" | "Combo"
+  price     Int      // in VND
+  emoji     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
+
+model Invoice {
+  id        String   @id @default(cuid())
+  machine   String
+  customer  String
+  amount    Int      // in VND
+  method    String   // "Tiền mặt" | "QR" | "Ví điện tử"
+  status    String   @default("Chờ") // "Đã thanh toán" | "Chờ" | "Hủy"
+  time      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([machine])
+  @@index([customer])
+  @@index([status])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  role      String   @default("cashier") // "admin" | "cashier"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+}

@@ -1,11 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { machines, formatVND, type MachineStatus } from "@/lib/mock-data";
 import { Plus, Wrench, Clock, User } from "lucide-react";
 import { useState } from "react";
 
-export const Route = createFileRoute("/admin/machines")({ component: Machines });
+export const Route = createFileRoute("/admin/machines")({
+  beforeLoad: async () => {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+    if (!isLocalhost) {
+      throw redirect({ to: "/play" });
+    }
+  },
+  component: Machines,
+});
 
 const statusMeta: Record<MachineStatus, { label: string; tone: string }> = {
   in_use: { label: "Đang dùng", tone: "primary" },

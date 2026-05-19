@@ -1,9 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { machines, invoices, formatVND } from "@/lib/mock-data";
 import { TrendingUp, MonitorPlay, Users, Coffee, AlertTriangle } from "lucide-react";
 
-export const Route = createFileRoute("/admin/")({ component: Dashboard });
+export const Route = createFileRoute("/admin/")({
+  beforeLoad: async () => {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+    if (!isLocalhost) {
+      throw redirect({ to: "/play" });
+    }
+  },
+  component: Dashboard,
+});
 
 function Dashboard() {
   const inUse = machines.filter((m) => m.status === "in_use").length;

@@ -1,11 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatVND } from "@/lib/mock-data";
 import { Plus, Search, Crown } from "lucide-react";
 
-export const Route = createFileRoute("/admin/customers")({ component: Customers });
+export const Route = createFileRoute("/admin/customers")({
+  beforeLoad: async () => {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+    if (!isLocalhost) {
+      throw redirect({ to: "/play" });
+    }
+  },
+  component: Customers,
+});
 
 const customers = [
   { id: "KH001", name: "Nguyễn Văn A", phone: "0901234567", visits: 42, total: 1850000, tier: "VIP" },

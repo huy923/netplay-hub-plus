@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AccessProvider } from "@/contexts/access";
 
 function NotFoundComponent() {
   return (
@@ -70,7 +71,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <Outlet />
+        <AccessProvider>
+          <Outlet />
+        </AccessProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

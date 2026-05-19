@@ -1,10 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { menu, formatVND } from "@/lib/mock-data";
 import { Plus, Pencil } from "lucide-react";
 
-export const Route = createFileRoute("/admin/menu")({ component: Menu });
+export const Route = createFileRoute("/admin/menu")({
+  beforeLoad: async () => {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+    if (!isLocalhost) {
+      throw redirect({ to: "/play" });
+    }
+  },
+  component: Menu,
+});
 
 function Menu() {
   return (

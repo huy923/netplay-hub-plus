@@ -1,11 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { menu, machines, formatVND } from "@/lib/mock-data";
 import { Plus, Minus, Trash2, QrCode, Banknote, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 
-export const Route = createFileRoute("/admin/pos")({ component: POS });
+export const Route = createFileRoute("/admin/pos")({
+  beforeLoad: async () => {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+    if (!isLocalhost) {
+      throw redirect({ to: "/play" });
+    }
+  },
+  component: POS,
+});
 
 function POS() {
   const [cart, setCart] = useState<Record<string, number>>({ m1: 2, m4: 1 });

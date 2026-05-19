@@ -1,8 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { formatVND } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/admin/reports")({ component: Reports });
+export const Route = createFileRoute("/admin/reports")({
+  beforeLoad: async () => {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+    if (!isLocalhost) {
+      throw redirect({ to: "/play" });
+    }
+  },
+  component: Reports,
+});
 
 const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 const values = [1800, 2200, 1900, 2600, 3100, 4200, 3800];
