@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { formatVND } from "@/lib/mock-data";
+import { useCybernetData } from "@/hooks/use-cybernet-data";
 
 export const Route = createFileRoute("/admin/reports")({ component: Reports });
 
@@ -8,8 +9,10 @@ const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 const values = [1800, 2200, 1900, 2600, 3100, 4200, 3800];
 
 function Reports() {
+  const { data } = useCybernetData();
+  const invoices = data?.invoices ?? [];
   const max = Math.max(...values);
-  const total = values.reduce((a, b) => a + b, 0) * 1000;
+  const total = invoices.filter((i) => i.status === "Đã thanh toán").reduce((a, b) => a + b.amount, 0);
   return (
     <div className="space-y-6">
       <div>
@@ -18,8 +21,8 @@ function Reports() {
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="p-5"><div className="text-sm text-muted-foreground">Tổng doanh thu</div><div className="font-display text-2xl font-bold text-primary mt-1">{formatVND(total)}</div></Card>
-        <Card className="p-5"><div className="text-sm text-muted-foreground">Số hóa đơn</div><div className="font-display text-2xl font-bold mt-1">218</div></Card>
-        <Card className="p-5"><div className="text-sm text-muted-foreground">Giờ máy bán ra</div><div className="font-display text-2xl font-bold mt-1">412h</div></Card>
+        <Card className="p-5"><div className="text-sm text-muted-foreground">Số hóa đơn</div><div className="font-display text-2xl font-bold mt-1">{invoices.length}</div></Card>
+        <Card className="p-5"><div className="text-sm text-muted-foreground">Giờ máy bán ra</div><div className="font-display text-2xl font-bold mt-1">{Math.max(1, invoices.length * 2)}h</div></Card>
       </div>
       <Card className="p-5">
         <div className="font-semibold mb-4">Doanh thu theo ngày</div>

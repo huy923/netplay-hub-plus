@@ -1,25 +1,34 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { menu, machines, formatVND } from "@/lib/mock-data";
+import { formatVND, type Invoice } from "@/lib/mock-data";
+import { useCybernetData } from "@/hooks/use-cybernet-data";
 import { Plus, Minus, Trash2, QrCode, Banknote, Wallet } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export const Route = createFileRoute("/admin/pos")({ component: POS });
 
 function POS() {
+  const { data, mutate } = useCybernetData();
+  const menu = data?.menu ?? [];
+  const machines = data?.machines ?? [];
   const [cart, setCart] = useState<Record<string, number>>({ m1: 2, m4: 1 });
-  const [machine, setMachine] = useState("3");
+  const [machine, setMachine] = useState("");
   const [hours, setHours] = useState(2);
   const [method, setMethod] = useState<"cash" | "qr" | "ewallet">("qr");
+  const [paid, setPaid] = useState(false);
 
-  const selectedMachine = machines.find((m) => m.id === machine)!;
+  useEffect(() => {
+    if (!machine && machines[0]) setMachine(machines[0].id);
+  }, [machine, machines]);
+
+  const selectedMachine = machines.find((m) => m.id === machine) ?? machines[0];
   const items = useMemo(
     () => menu.filter((m) => cart[m.id]).map((m) => ({ ...m, qty: cart[m.id] })),
-    [cart],
+    [cart, menu],
   );
   const foodTotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-  const playTotal = selectedMachine.pricePerHour * hours;
+  const playTotal = (selectedMachine?.pricePerHour ?? 0) * hours;
   const total = foodTotal + playTotal;
 
   const add = (id: string) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
@@ -28,6 +37,14 @@ function POS() {
     const { [id]: _, ...rest } = c;
     return n <= 0 ? rest : { ...c, [id]: n };
   });
+  const pay = async () => {
+    if (!selectedMachine || total <= 0) return;
+    const methodLabel: Record<typeof method, Invoice["method"]> = { cash: "Tiền mặt", qr: "QR", ewallet: "Ví điện tử" };
+    await mutate("invoice.create", { machine: selectedMachine.name, customer: selectedMachine.customer ?? "Khách vãng lai", amount: total, method: methodLabel[method] });
+    if (hours > 0) await mutate("machine.extend", { id: selectedMachine.id, hours });
+    setCart({});
+    setPaid(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -123,7 +140,8 @@ function POS() {
               </div>
             </div>
 
-            <Button className="w-full bg-gradient-primary shadow-glow" size="lg">Thanh toán {formatVND(total)}</Button>
+            {paid && <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-sm text-success">Đã tạo hóa đơn và cập nhật dữ liệu.</div>}
+            <Button className="w-full bg-gradient-primary shadow-glow" size="lg" disabled={!selectedMachine || total <= 0} onClick={pay}>Thanh toán {formatVND(total)}</Button>
           </div>
         </Card>
       </div>
