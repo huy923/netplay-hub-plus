@@ -1,20 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
-import { machines, invoices, formatVND } from "@/lib/mock-data";
+import { formatVND } from "@/lib/mock-data";
 import { TrendingUp, MonitorPlay, Users, Coffee, AlertTriangle } from "lucide-react";
+import { useCybernetData } from "@/hooks/use-cybernet-data";
 
 export const Route = createFileRoute("/admin/")({ component: Dashboard });
 
 function Dashboard() {
+  const { data } = useCybernetData();
+  const machines = data?.machines ?? [];
+  const invoices = data?.invoices ?? [];
+  const customers = data?.customers ?? [];
   const inUse = machines.filter((m) => m.status === "in_use").length;
   const idle = machines.filter((m) => m.status === "idle").length;
   const maint = machines.filter((m) => m.status === "maintenance").length;
+  const revenue = invoices.filter((i) => i.status === "Đã thanh toán").reduce((sum, i) => sum + i.amount, 0);
 
   const stats = [
-    { label: "Doanh thu hôm nay", value: formatVND(2840000), icon: TrendingUp, tone: "primary", sub: "+12% so với hôm qua" },
+    { label: "Doanh thu hôm nay", value: formatVND(revenue), icon: TrendingUp, tone: "primary", sub: `${invoices.length} hóa đơn đã ghi nhận` },
     { label: "Máy đang dùng", value: `${inUse}/${machines.length}`, icon: MonitorPlay, tone: "info", sub: `${idle} trống · ${maint} lỗi` },
-    { label: "Khách đang chơi", value: "9", icon: Users, tone: "success", sub: "3 khách VIP" },
-    { label: "Đơn đồ ăn", value: "14", icon: Coffee, tone: "warning", sub: "2 đơn đang chờ" },
+    { label: "Khách hàng", value: String(customers.length), icon: Users, tone: "success", sub: `${customers.filter((c) => c.tier === "VIP").length} khách VIP` },
+    { label: "Đơn đồ ăn", value: String(Math.max(0, invoices.length - 1)), icon: Coffee, tone: "warning", sub: "Theo hóa đơn POS" },
   ] as const;
 
   return (
