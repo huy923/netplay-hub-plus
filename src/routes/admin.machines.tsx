@@ -27,7 +27,7 @@ function Machines() {
   const openCreate = () => setEditing({ id: "", name: "", area: "Thường", status: "idle", pricePerHour: data?.settings.standardPrice ?? 8000 });
   const saveMachine = async () => {
     if (!editing?.name.trim()) return;
-    await mutate(editing.id ? "machine.update" : "machine.create", editing);
+    await mutate(editing.id ? "machine.update" : "machine.create", { ...editing });
     setEditing(null);
   };
   const removeMachine = async (machine: Machine) => {
