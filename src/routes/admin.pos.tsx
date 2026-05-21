@@ -25,7 +25,7 @@ function POS() {
   const selectedMachine = machines.find((m) => m.id === machine) ?? machines[0];
   const items = useMemo(
     () => menu.filter((m) => cart[m.id]).map((m) => ({ ...m, qty: cart[m.id] })),
-    [cart],
+    [cart, menu],
   );
   const foodTotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const playTotal = (selectedMachine?.pricePerHour ?? 0) * hours;
