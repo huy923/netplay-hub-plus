@@ -34,7 +34,7 @@ async function getSql() {
   for (const key of dataKeys) {
     await memory.__cybernetSql`
       insert into app_data (key, value)
-      values (${key}, ${memory.__cybernetSql.json(seed[key])})
+      values (${key}, ${memory.__cybernetSql.json(JSON.parse(JSON.stringify(seed[key])))})
       on conflict (key) do nothing
     `;
   }
@@ -56,7 +56,7 @@ async function saveKey<K extends DataKey>(key: K, value: CybernetData[K]) {
 
   await sql`
     insert into app_data (key, value, updated_at)
-    values (${key}, ${sql.json(value)}, now())
+    values (${key}, ${sql.json(JSON.parse(JSON.stringify(value)))}, now())
     on conflict (key) do update set value = excluded.value, updated_at = now()
   `;
 }
