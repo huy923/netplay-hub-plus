@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cybernet
+      POSTGRES_USER: cybernet
+      POSTGRES_PASSWORD: cybernet
+    ports:
+      - "5432:5432"
+    volumes:
+      - cybernet-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cybernet -d cybernet"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://cybernet:cybernet@db:5432/cybernet
+    ports:
+      - "5173:5173"
+
+volumes:
+  cybernet-db:
