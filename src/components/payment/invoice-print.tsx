@@ -16,7 +16,7 @@ interface InvoicePrintProps {
     createdAt: string;
     discountAmount?: number;
     items?: { name: string; price: number; qty: number; type: string }[];
-  };
+  }; 
   bankInfo?: {
     bankName: string;
     accountNo: string;
