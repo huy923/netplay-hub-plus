@@ -37,6 +37,7 @@ import {
   settleInvoices,
   getCustomerByName,
   endMachineSession,
+  confirmEndSessionIdle,
   updateOrderStatus,
   getAllPendingFoodOrders,
 } from "@/lib/cybernet.functions";
@@ -92,6 +93,7 @@ function POS() {
   const getUnpaidFn = useServerFn(getUnpaidInvoicesByMachine);
   const settleFn = useServerFn(settleInvoices);
   const endSessionFn = useServerFn(endMachineSession);
+  const confirmIdleFn = useServerFn(confirmEndSessionIdle);
   const updateOrderStatusFn = useServerFn(updateOrderStatus);
   const kitchenSlip = useKitchenSlip();
 
@@ -111,7 +113,6 @@ function POS() {
   const [hours, setHours] = useState(1);
   const [method, setMethod] = useState<"Tiền mặt" | "QR" | "Ví điện tử">("QR");
   const [zoneFilter, setZoneFilter] = useState<string>("all");
-  const [customerName, setCustomerName] = useState("");
   const [discountCode, setDiscountCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null);
   const [discountError, setDiscountError] = useState("");
@@ -167,21 +168,6 @@ function POS() {
     : 0;
   const settleFinalTotal = Math.max(0, settleSubtotal - settleVipDiscountAmount);
 
-  const [vipCustomer, setVipCustomer] = useState<any>(null);
-
-  useEffect(() => {
-    const name = customerName.trim();
-    if (!name) {
-      setVipCustomer(null);
-      return;
-    }
-    getCustomerFn({ data: { name } })
-      .then((c: any) => {
-        setVipCustomer(c?.tier === "VIP" ? c : null);
-      })
-      .catch(() => setVipCustomer(null));
-  }, [customerName]);
-
   const filteredMachines = useMemo(
     () => (zoneFilter === "all" ? machines : machines.filter((m: any) => m.area === zoneFilter)),
     [machines, zoneFilter],
@@ -197,10 +183,7 @@ function POS() {
   const playTotal = mode === "play" ? (selectedMachine?.pricePerHour ?? 0) * hours : 0;
   const subtotal = foodTotal + playTotal;
   const discountAmount = appliedDiscount?.discountAmount ?? 0;
-  const vipDiscountAmount = vipCustomer
-    ? Math.round(((subtotal - discountAmount) * VIP_DISCOUNT_PERCENT) / 100)
-    : 0;
-  const total = Math.max(0, subtotal - discountAmount - vipDiscountAmount);
+  const total = Math.max(0, subtotal - discountAmount);
 
   const add = (id: string) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
   const sub = (id: string) =>
@@ -241,12 +224,11 @@ function POS() {
   const createFoodOrderMutation = useMutation({
     mutationFn: async () => {
       if (items.length === 0) throw new Error(t("pos.noItems"));
-      const cust = customerName.trim() || t("pos.walkInGuest");
       const machineName = selectedMachine?.name || "Quầy";
       return ci({
         data: {
           machine: machineName,
-          customer: cust,
+          customer: t("pos.walkInGuest"),
           amount: total,
           method,
           status: "Chờ xử lý",
@@ -263,7 +245,6 @@ function POS() {
     onSuccess: () => {
       toast.success(t("pos.orderCreated"));
       setCart({});
-      setCustomerName("");
       handleRemoveDiscount();
       qc.invalidateQueries({ queryKey: ["invoices"] });
     },
@@ -274,14 +255,13 @@ function POS() {
   const pay = useMutation({
     mutationFn: async () => {
       if (!selectedMachine) throw new Error(t("pos.errorNoMachine"));
-      const cust = customerName.trim() || t("pos.walkInGuest");
       const totalSec = Math.round(hours * 3600);
       const hh = String(Math.floor(totalSec / 3600)).padStart(2, "0");
       const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, "0");
       await ci({
         data: {
           machine: selectedMachine.name,
-          customer: cust,
+          customer: t("pos.walkInGuest"),
           amount: total,
           method,
           status: t("dashboard.statusPaid"),
@@ -298,7 +278,6 @@ function POS() {
         data: {
           id: selectedMachine.id,
           status: "in_use",
-          customer: cust,
           remaining: `${hh}:${mm}`,
           startedAt: new Date().toISOString(),
         },
@@ -307,7 +286,6 @@ function POS() {
     onSuccess: () => {
       toast.success(t("pos.success"));
       setCart({});
-      setCustomerName("");
       setMachineId("");
       handleRemoveDiscount();
       setHours(1);
@@ -326,9 +304,19 @@ function POS() {
 
       if (settleMachine?.status === "in_use") {
         const payMethod = method === "Tiền mặt" ? "cash" : "qr";
-        return endSessionFn({
+        const result = await endSessionFn({
           data: { machineId: settleMachine.id, paymentMethod: payMethod as any },
         });
+        if (payMethod === "cash" && result?.paymentId) {
+          await confirmIdleFn({
+            data: {
+              machineId: settleMachine.id,
+              paymentId: result.paymentId,
+              invoiceId: result.invoiceId,
+            },
+          });
+        }
+        return result;
       }
 
       if (unpaidInvoices.length > 0) {
@@ -456,7 +444,7 @@ function POS() {
 
         {/* ORDERS MODE */}
         {mode === "orders" && (
-          <div style={fadeIn(1)} className="grid gap-4 lg:grid-cols-[1fr_320px]">
+          <div style={fadeIn(1)} className="grid gap-4 lg:grid-cols-[1fr_320px] mb-4">
             <Card className="p-4 border border-border bg-card/80 backdrop-blur-xl">
               <div className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <ClipboardList className="h-4 w-4 text-orange-400" />
@@ -957,27 +945,6 @@ function POS() {
                 </>
               )}
 
-              {/* Customer name */}
-              <div>
-                <div className="text-xs text-muted-foreground mb-1">{t("pos.customerName")}</div>
-                <div className="relative">
-                  <input
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder={t("pos.customerNamePlaceholder")}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50"
-                  />
-                  {vipCustomer && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20">
-                      <Crown className="h-3 w-3 text-yellow-400" />
-                      <span className="text-[10px] font-medium text-yellow-400">
-                        VIP -{VIP_DISCOUNT_PERCENT}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Cart */}
               <div className="border-t border-border pt-3">
                 <div className="text-xs text-muted-foreground mb-2">{t("pos.cart")}</div>
@@ -1118,15 +1085,6 @@ function POS() {
                       {t("discount.label")}
                     </span>
                     <span className="text-success">-{formatVND(discountAmount)}</span>
-                  </div>
-                )}
-                {vipCustomer && vipDiscountAmount > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <Crown className="h-3 w-3 text-yellow-400" />
-                      VIP {VIP_DISCOUNT_PERCENT}%
-                    </span>
-                    <span className="text-yellow-400">-{formatVND(vipDiscountAmount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between pt-2 border-t border-border mt-2">

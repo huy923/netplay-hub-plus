@@ -32,7 +32,6 @@ import {
   confirmEndSessionIdle,
   getPublicBankSettings,
   getUnpaidInvoicesByMachine,
-  getCurrentSessionOrders,
 } from "@/lib/cybernet.functions";
 import { useTranslation } from "react-i18next";
 import { useRealtime } from "@/hooks/use-realtime";
@@ -205,7 +204,7 @@ function Machines() {
   const endSessionM = useMutation({
     mutationFn: (data: { machineId: string; paymentMethod: "cash" | "qr" }) =>
       endSessionFn({ data }),
-    onSuccess: async (result: any) => {
+    onSuccess: async (result: any, variables) => {
       if (result) {
         const m = endingSession;
         const bInfo = bankInfo
@@ -226,7 +225,7 @@ function Machines() {
           machine: m?.name ?? "",
           customer: customerName,
           amount: result.amount,
-          method: m?._payMethod ?? "cash",
+          method: variables.paymentMethod,
           time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
           status: "Đã thanh toán",
           createdAt: new Date().toISOString(),
@@ -236,7 +235,9 @@ function Machines() {
           machineId: m?.id,
           machineName: m?.name,
           invoiceId: result.invoiceId,
+          paymentId: result.paymentId,
           amount: result.amount,
+          payMethod: variables.paymentMethod,
           invoiceData,
           bankInfo: bInfo,
         });
@@ -249,9 +250,19 @@ function Machines() {
   const handleConfirmPrintDone = async () => {
     if (!printReady?.machineId) return;
     try {
-      await confirmIdleFn({ data: { machineId: printReady.machineId } });
-      invalidate();
-      toast.success(t("machine.endSessionSuccess"));
+      if (printReady.payMethod === "cash") {
+        await confirmIdleFn({
+          data: {
+            machineId: printReady.machineId,
+            paymentId: printReady.paymentId,
+            invoiceId: printReady.invoiceId,
+          },
+        });
+        invalidate();
+        toast.success(t("machine.endSessionSuccess"));
+      } else {
+        toast.success(t("machine.printDoneQr"));
+      }
     } catch {
       toast.error(t("common.error"));
     } finally {
@@ -266,7 +277,12 @@ function Machines() {
   };
 
   const handleSkipPrint = () => {
-    handleConfirmPrintDone();
+    if (printReady?.payMethod === "cash") {
+      handleConfirmPrintDone();
+    } else {
+      setPrintReady(null);
+      setEndingSession(null);
+    }
   };
 
   useEffect(() => {
@@ -576,16 +592,11 @@ function EndSessionDialog({
 }) {
   const [method, setMethod] = useState<"cash" | "qr">("cash");
   const [showQR, setShowQR] = useState(false);
-  const getSessionOrdersFn = useServerFn(getCurrentSessionOrders);
+  const getUnpaidFn = useServerFn(getUnpaidInvoicesByMachine);
 
   const { data: liveOrders } = useQuery({
     queryKey: ["unpaid-for-end", machine?.name],
-    queryFn: () => getSessionOrdersFn({
-      data: {
-        machine: machine?.name ?? "",
-        startedAt: machine?.startedAt ?? new Date().toISOString(),
-      },
-    }),
+    queryFn: () => getUnpaidFn({ data: { machine: machine?.name ?? "" } }),
     enabled: !!machine?.name,
     refetchInterval: 10000,
   });
@@ -615,9 +626,14 @@ function EndSessionDialog({
 
   if (!machine) return null;
 
-  const timeCost = hasSessionEndInvoice ? 0 : Math.round((getPlayed(machine) / 3600) * machine.pricePerHour);
+  const existingTimeItem = hasSessionEndInvoice
+    ? orders.items.find((i: any) => i.type === "time")
+    : undefined;
+  const timeCost = existingTimeItem
+    ? existingTimeItem.price
+    : Math.round((getPlayed(machine) / 3600) * machine.pricePerHour);
   const foodCost = orders?.foodTotal ?? 0;
-  const total = hasSessionEndInvoice ? foodCost : timeCost + foodCost;
+  const total = timeCost + foodCost;
   const customerName = customerObj?.name ?? "Khách vãng lai";
   const customerPhone = customerObj?.phone ?? "";
   const isVIP = customerObj?.tier === "VIP" || machine.customerData?.tier === "VIP";
@@ -638,7 +654,7 @@ function EndSessionDialog({
               {hasSessionEndInvoice ? (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Hóa đơn chờ thanh toán</span>
-                  <span className="font-semibold text-foreground">{formatVND(foodCost)}</span>
+                  <span className="font-semibold text-foreground">{formatVND(timeCost + foodCost)}</span>
                 </div>
               ) : (
                 <div className="flex justify-between text-sm">
@@ -757,18 +773,12 @@ function EndSessionDialog({
           <DialogHeader>
             <DialogTitle className="text-foreground">In hóa đơn</DialogTitle>
           </DialogHeader>
-          <div className="text-center space-y-3 py-2">
-            <Printer className="h-10 w-10 mx-auto text-primary" />
-            <p className="text-sm text-muted-foreground">
-              Hóa đơn {formatVND(printReady?.amount ?? 0)} đã in. Vui lòng xác nhận khách đã nhận.
-            </p>
-          </div>
           <DialogFooter className="flex-col gap-2 mt-2">
             <Button
               className="w-full h-10 bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0"
               onClick={onPrintDone}
             >
-              <CheckCircle2 className="h-4 w-4 mr-2" /> Xác nhận & chuyển trống
+              <CheckCircle2 className="h-4 w-4 mr-2" /> Xác nhận
             </Button>
             <Button
               variant="outline"

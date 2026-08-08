@@ -159,7 +159,8 @@
     "printReadyDesc": "Print window opened. Please print the invoice then click the button below.",
     "printWarning": "The machine will become available after you confirm printing is done. If print fails, click \"Retry\" to reprint.",
     "retryPrint": "Reprint",
-    "printDoneConfirm": "Printed, ready for next customer"
+    "printDoneConfirm": "Printed, ready for next customer",
+    "printDoneQr": "QR invoice printed. Machine stays occupied until payment is received."
   },
   "pos": {
     "title": "POS",

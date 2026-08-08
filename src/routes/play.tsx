@@ -64,6 +64,7 @@ function PlayerHome() {
   const createOrderFn = useServerFn(createFoodOrder);
   const makePaymentFn = useServerFn(createPayment);
   const makeNotificationFn = useServerFn(createNotification);
+  const updateOrderStatusFn = useServerFn(updateOrderStatus);
   const updateMachineFn = useServerFn(updateMachine);
 
   const {
@@ -93,10 +94,7 @@ function PlayerHome() {
   const pendingFoodOrders = (allOrders as any[]).filter(
     (o: any) => o.status === "Chờ xử lý" || o.status === "Đang chuẩn bị" || o.status === "Đã giao",
   );
-  const foodAmount = pendingFoodOrders.reduce(
-    (sum: number, o: any) => sum + o.amount,
-    0,
-  );
+  const foodAmount = pendingFoodOrders.reduce((sum: number, o: any) => sum + o.amount, 0);
 
   const groupedFood: Record<string, { qty: number; total: number }> = {};
   for (const order of pendingFoodOrders) {
@@ -117,21 +115,38 @@ function PlayerHome() {
       return;
     }
     const raw: any = machine.customer;
-    const name = typeof raw === "object" && raw ? raw.name : typeof raw === "string" ? (() => { try { return JSON.parse(raw).name; } catch { return raw; } })() : undefined;
+    const name =
+      typeof raw === "object" && raw
+        ? raw.name
+        : typeof raw === "string"
+          ? (() => {
+              try {
+                return JSON.parse(raw).name;
+              } catch {
+                return raw;
+              }
+            })()
+          : undefined;
     if (name) {
-      getCustomerFn({ data: { name } }).then((c: any) => setCustObj(c)).catch(() => setCustObj(null));
+      getCustomerFn({ data: { name } })
+        .then((c: any) => setCustObj(c))
+        .catch(() => setCustObj(null));
     }
   }, [machine?.customer]);
 
   const isVIP = custObj?.tier === "VIP";
-  const vipDiscount = isVIP ? Math.round((foodAmount) * 0.1) : 0;
+  const vipDiscount = isVIP ? Math.round(foodAmount * 0.1) : 0;
 
   const [remaining, setRemaining] = useState(0);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [showQRPayment, setShowQRPayment] = useState(false);
   const [sessionEnded, setSessionEnded] = useState(false);
   const [sessionAmount, setSessionAmount] = useState(0);
-  const sessionSnapshot = useRef<{ amount: number; food: typeof foodItems; timeCost: number } | null>(null);
+  const sessionSnapshot = useRef<{
+    amount: number;
+    food: typeof foodItems;
+    timeCost: number;
+  } | null>(null);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [callStaff, setCallStaff] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -204,10 +219,12 @@ function PlayerHome() {
   });
 
   const [warned15, setWarned15] = useState(false);
+  const [warnDismissed, setWarnDismissed] = useState(false);
   const [audioEl, setAudioEl] = useState<HTMLAudioElement | null>(null);
 
   const handleExtend = async (added: number, amount: number) => {
     const newRem = remaining + added;
+    if (newRem > 900) setWarnDismissed(false);
     setRemaining(newRem);
     if (machine) {
       const h = Math.floor(newRem / 3600);
@@ -240,8 +257,68 @@ function PlayerHome() {
     }
   };
 
+  const handleComboOrder = async (combo: {
+    label: string;
+    price: number;
+    items: string;
+    seconds: number;
+  }): Promise<string | undefined> => {
+    if (!machine) return undefined;
+    const inv: { id?: string } | undefined = await createOrderFn({
+      data: {
+        machineName: machine.name,
+        items: [{ name: combo.label, price: combo.price, qty: 1, type: "combo" }],
+        note: `${combo.items} — kèm gia hạn +${Math.round(combo.seconds / 3600)}h giờ chơi (tự động)`,
+      },
+    });
+    const newRem = remaining + combo.seconds;
+    if (newRem > 900) setWarnDismissed(false);
+    setRemaining(newRem);
+    const h = Math.floor(newRem / 3600);
+    const m = Math.floor((newRem % 3600) / 60);
+    await updateMachineFn({
+      data: {
+        id: machine.id,
+        remaining: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
+        startedAt: new Date().toISOString(),
+      },
+    });
+    await makeNotificationFn({
+      data: {
+        type: "COMBO_ORDER",
+        title: `Máy ${machine.name} đặt combo`,
+        message: `${combo.label} — ${formatVND(combo.price)} (gồm ${combo.items}) — tự động gia hạn +${Math.round(combo.seconds / 3600)}h giờ chơi. Vui lòng chuẩn bị combo cho khách.`,
+        targetRole: "CASHIER",
+      },
+    }).catch(() => {});
+    setWarned15(false);
+    return inv?.id;
+  };
+
+  const handleCancelComboOrder = async (id: string, seconds: number) => {
+    if (!machine) return;
+    try {
+      await updateOrderStatusFn({ data: { id, status: "Đã hủy" } });
+    } catch {
+      // continue
+    }
+    if (seconds > 0) {
+      const newRem = Math.max(0, remaining - seconds);
+      setRemaining(newRem);
+      const h = Math.floor(newRem / 3600);
+      const mm = Math.floor((newRem % 3600) / 60);
+      await updateMachineFn({
+        data: {
+          id: machine.id,
+          remaining: `${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`,
+          startedAt: new Date().toISOString(),
+        },
+      });
+    }
+  };
+
   useEffect(() => {
-    if (remaining > 0 && remaining <= 900 && !warned15 && machine) {
+    if (remaining > 0 && remaining <= 900 && !warned15 && !warnDismissed && machine) {
       setWarned15(true);
       try {
         const ctx = new AudioContext();
@@ -258,7 +335,7 @@ function PlayerHome() {
         /* no-op */
       }
     }
-  }, [remaining, warned15, machine]);
+  }, [remaining, warned15, warnDismissed, machine]);
 
   if (loadingMachine) {
     return (
@@ -386,7 +463,9 @@ function PlayerHome() {
                   <>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Giờ chơi</span>
-                      <span className="font-semibold text-foreground">{formatVND(snapTimeCost)}</span>
+                      <span className="font-semibold text-foreground">
+                        {formatVND(snapTimeCost)}
+                      </span>
                     </div>
                     {snapFood.length > 0 && (
                       <>
@@ -514,6 +593,7 @@ function PlayerHome() {
                 className="w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 h-12 text-base"
                 onClick={() => {
                   setWarned15(false);
+                  setWarnDismissed(true);
                   setShowQRPayment(true);
                 }}
               >
@@ -524,6 +604,7 @@ function PlayerHome() {
                 className="w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 h-12 text-base"
                 onClick={() => {
                   setWarned15(false);
+                  setWarnDismissed(true);
                   setTab("extend");
                 }}
               >
@@ -533,7 +614,10 @@ function PlayerHome() {
               <Button
                 variant="outline"
                 className="w-full h-12 text-base"
-                onClick={() => setWarned15(false)}
+                onClick={() => {
+                  setWarned15(false);
+                  setWarnDismissed(true);
+                }}
               >
                 {t("common.close")}
               </Button>
@@ -591,6 +675,8 @@ function PlayerHome() {
               remaining={remaining}
               onExtend={handleExtend}
               pricePerHour={machine.pricePerHour}
+              onComboOrder={handleComboOrder}
+              onCancelComboOrder={handleCancelComboOrder}
             />
           )}
           {tab === "pay" && (
@@ -1169,10 +1255,20 @@ function ExtendTab({
   remaining,
   onExtend,
   pricePerHour,
+  onComboOrder,
+  onCancelComboOrder,
 }: {
   remaining: number;
   onExtend: (seconds: number, amount: number) => void;
   pricePerHour: number;
+  onComboOrder: (combo: {
+    id: string;
+    label: string;
+    price: number;
+    items: string;
+    seconds: number;
+  }) => Promise<string | undefined>;
+  onCancelComboOrder: (id: string, seconds: number) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const { data: combos = [] } = useQuery({
@@ -1180,20 +1276,73 @@ function ExtendTab({
     queryFn: () => listCombos(),
   });
 
-  const packs = combos.map((c: any) => ({
-    id: c.id,
-    label: c.name,
-    price: c.price,
-    image: c.image,
-    sub:
-      (c.items ?? []).map((ci: any) => `${ci.menuItem?.name ?? ""} ×${ci.qty}`).join(", ") +
-      ` + ${Math.floor(c.seconds / 3600)}h`,
-    seconds: c.seconds,
-  }));
+  const packs = combos.map((c: any) => {
+    const comboItems = (c.items ?? [])
+      .map((ci: any) => `${ci.menuItem?.name ?? ""} ×${ci.qty}`)
+      .join(", ");
+    return {
+      id: c.id,
+      label: c.name,
+      price: c.price,
+      image: c.image,
+      items: comboItems,
+      sub: `${comboItems} + ${Math.floor(c.seconds / 3600)}h`,
+      seconds: c.seconds,
+    };
+  });
   const [picked, setPicked] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+  const [ordering, setOrdering] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [ordered, setOrdered] = useState<{
+    id: string;
+    label: string;
+    price: number;
+    seconds: number;
+  } | null>(null);
+  const [cancelLeft, setCancelLeft] = useState(0);
+  const [cancelDone, setCancelDone] = useState(false);
   const pick = packs.find((p) => p.id === picked);
   const [manualHours, setManualHours] = useState(1);
+
+  useEffect(() => {
+    if (!ordered || cancelLeft <= 0) return;
+    const iv = setInterval(() => setCancelLeft((c) => c - 1), 1000);
+    return () => clearInterval(iv);
+  }, [ordered, cancelLeft > 0]);
+
+  const handleOrderCombo = async () => {
+    if (!pick) return;
+    setOrdering(true);
+    setOrderError(null);
+    setCancelDone(false);
+    try {
+      const invoiceId = await onComboOrder(pick);
+      setPaying(false);
+      setPicked(null);
+      if (invoiceId) {
+        setOrdered({ ...pick, id: invoiceId });
+        setCancelLeft(30);
+      }
+    } catch (e) {
+      setOrderError(e instanceof Error ? e.message : "Lỗi khi đặt combo, thử lại");
+    } finally {
+      setOrdering(false);
+    }
+  };
+
+  const handleCancelCombo = async () => {
+    if (!ordered || cancelLeft <= 0) return;
+    try {
+      await onCancelComboOrder(ordered.id, ordered.seconds);
+      setCancelDone(true);
+    } catch {
+      // continue
+    } finally {
+      setOrdered(null);
+      setCancelLeft(0);
+    }
+  };
 
   return (
     <div>
@@ -1341,8 +1490,8 @@ function ExtendTab({
             className="bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 text-white border-0 shadow-lg shadow-purple-500/20"
             onClick={() => setPaying(true)}
           >
-            <QrCode className="h-4 w-4 mr-2" />
-            {t("play.extendQR")}
+            <Send className="h-4 w-4 mr-2" />
+            Đặt combo
           </Button>
         </div>
       )}
@@ -1350,33 +1499,131 @@ function ExtendTab({
       {paying && pick && (
         <div
           className="fixed inset-0 bg-background/80 backdrop-blur-sm grid place-items-center z-50 p-4"
-          onClick={() => setPaying(false)}
+          onClick={() => !ordering && setPaying(false)}
         >
           <Card
             className="p-6 max-w-sm w-full border border-border bg-background"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center">
-              <div className="font-display text-lg font-bold text-foreground">
-                {t("play.scanQR")}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {pick.label} · {formatVND(pick.price)}
+              <div className="text-5xl">🍟</div>
+              <div className="font-display text-lg font-bold text-foreground mt-3">
+                Xác nhận đặt combo
               </div>
             </div>
-            <div className="mt-4 mx-auto h-48 w-48 grid place-items-center rounded-xl bg-muted border border-border">
-              <QrCode className="h-32 w-32 text-purple-400" />
+            <div className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between bg-muted rounded-lg px-3 py-2">
+                <span className="text-muted-foreground">Combo</span>
+                <b className="text-foreground">{pick.label}</b>
+              </div>
+              <div className="flex justify-between bg-muted rounded-lg px-3 py-2">
+                <span className="text-muted-foreground">Gồm</span>
+                <b className="text-foreground text-right">{pick.items}</b>
+              </div>
+              <div className="flex justify-between bg-muted rounded-lg px-3 py-2 text-green-500">
+                <span>⏱ Tự động gia hạn</span>
+                <b>+{Math.floor(pick.seconds / 3600)}h giờ chơi</b>
+              </div>
+              <div className="flex justify-between bg-muted rounded-lg px-3 py-2">
+                <span className="text-muted-foreground">Giá combo</span>
+                <b className="font-display text-lg bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                  {formatVND(pick.price)}
+                </b>
+              </div>
             </div>
-            <Button
-              className="w-full mt-4 bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0"
-              onClick={() => {
-                onExtend(pick.seconds, pick.price);
-                setPaying(false);
-                setPicked(null);
-              }}
-            >
-              {t("play.confirmPaid")}
-            </Button>
+            <div className="text-xs text-muted-foreground mt-3 text-center">
+              Nhân viên sẽ mang combo đến máy cho bạn.
+            </div>
+            {orderError && (
+              <div className="mt-3 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">
+                {orderError}
+              </div>
+            )}
+            <div className="flex gap-3 mt-5">
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled={ordering}
+                onClick={() => setPaying(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                className="flex-1 bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 text-white border-0 shadow-lg shadow-purple-500/20"
+                disabled={ordering}
+                onClick={handleOrderCombo}
+              >
+                {ordering ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                )}
+                {ordering ? "Đang đặt..." : "Xác nhận đặt"}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {ordered && (
+        <div
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm grid place-items-center z-50 p-4"
+          onClick={() => setOrdered(null)}
+        >
+          <Card
+            className="p-6 max-w-sm w-full border border-border bg-background text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {cancelDone ? (
+              <>
+                <div className="text-5xl">↩️</div>
+                <div className="font-display text-lg font-bold text-foreground mt-3">
+                  Đã hủy đơn combo
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {ordered.label} đã hủy, giờ chơi đã được hoàn lại.
+                </div>
+                <Button
+                  className="mt-4 w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0"
+                  onClick={() => {
+                    setOrdered(null);
+                    setCancelDone(false);
+                  }}
+                >
+                  {t("common.gotIt")}
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-5xl">✅</div>
+                <div className="font-display text-lg font-bold text-foreground mt-3">
+                  Đặt combo thành công
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {ordered.label} — {formatVND(ordered.price)}. Nhân viên sẽ mang combo đến máy, giờ
+                  chơi đã được gia hạn +{Math.floor(ordered.seconds / 3600)}h.
+                </div>
+                {cancelLeft > 0 && (
+                  <Button
+                    variant="destructive"
+                    className="mt-4 w-full h-11"
+                    onClick={handleCancelCombo}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Hủy đơn (còn {cancelLeft}s)
+                  </Button>
+                )}
+                <Button
+                  className="mt-4 w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0"
+                  onClick={() => {
+                    setOrdered(null);
+                    setCancelDone(false);
+                  }}
+                >
+                  {t("common.gotIt")}
+                </Button>
+              </>
+            )}
           </Card>
         </div>
       )}
@@ -1450,8 +1697,13 @@ function PayTab({
                   <b className="text-foreground">{formatVND(foodAmount)}</b>
                 </div>
                 {foodItems.map(([name, g]) => (
-                  <div key={name} className="flex justify-between text-xs text-muted-foreground pl-2">
-                    <span>{g.qty}x {name}</span>
+                  <div
+                    key={name}
+                    className="flex justify-between text-xs text-muted-foreground pl-2"
+                  >
+                    <span>
+                      {g.qty}x {name}
+                    </span>
                     <span>{formatVND(g.total)}</span>
                   </div>
                 ))}

@@ -20,6 +20,7 @@ import {
   X,
   Menu,
   PackagePlus,
+  Volume2,
 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
@@ -152,38 +153,96 @@ export function AdminShell() {
   });
 
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioReadyRef = useRef(false);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
 
-  const playNotifSound = () => {
+  const unlockAudio = useCallback(() => {
+    audioReadyRef.current = true;
     try {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioContext();
-      }
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
       const ctx = audioCtxRef.current;
-      if (ctx.state === "suspended") {
-        ctx.resume();
+      if (ctx.state === "running") {
+        setAudioUnlocked(true);
+        return;
       }
-      const notes = [880, 1100, 1320, 1100, 880];
-      notes.forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
-        gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.12);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.12 + 0.12);
-        osc.start(ctx.currentTime + i * 0.12);
-        osc.stop(ctx.currentTime + i * 0.12 + 0.12);
-      });
+      const p = ctx.resume();
+      if (p && typeof p.then === "function") {
+        p.then(() => {
+          if (ctx.state === "running") setAudioUnlocked(true);
+        }).catch(() => {});
+      }
     } catch {
       /* ignore */
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    unlockAudio();
+    window.addEventListener("pointerdown", unlockAudio);
+    window.addEventListener("keydown", unlockAudio);
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+    };
+  }, [unlockAudio]);
+
+  const playNotifSound = () => {
+    try {
+      let ctx = audioCtxRef.current;
+      if (!ctx || ctx.state === "closed") {
+        ctx = new AudioContext();
+        audioCtxRef.current = ctx;
+      }
+      const playNotes = () => {
+        try {
+          const notes = [880, 1100, 1320, 1100, 880];
+          notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.12 + 0.12);
+            osc.start(ctx.currentTime + i * 0.12);
+            osc.stop(ctx.currentTime + i * 0.12 + 0.12);
+          });
+        } catch {
+          /* ignore */
+        }
+        setAudioUnlocked(true);
+      };
+      if (ctx.state === "suspended") {
+        const resumePromise = ctx.resume();
+        if (resumePromise && typeof resumePromise.then === "function") {
+          resumePromise.then(playNotes).catch(() => {});
+        } else {
+          playNotes();
+        }
+        return;
+      }
+      playNotes();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const sseStatusRef = useRef<"connected" | "disconnected" | "connecting">("connecting");
+  const [sseStatus, setSseStatusState] = useState<"connected" | "disconnected" | "connecting">(
+    "connecting",
+  );
+  const setSseStatus = (s: "connected" | "disconnected" | "connecting") => {
+    sseStatusRef.current = s;
+    setSseStatusState(s);
   };
 
   useEffect(() => {
     let es: EventSource | null = null;
     function connect() {
       es = new EventSource("/api/sse");
+      es.onopen = () => setSseStatus("connected");
       es.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -248,18 +307,42 @@ export function AdminShell() {
         }
       };
       es.onerror = () => {
+        setSseStatus("disconnected");
         es?.close();
         setTimeout(connect, 3000);
       };
     }
     connect();
     return () => es?.close();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const lastNotifIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const notifs = (notifications as any[]) ?? [];
+    if (notifs.length === 0) return;
+    const latest = notifs.find(
+      (n: any) =>
+        n.type === "FOOD_ORDER" ||
+        n.type === "COMBO_ORDER" ||
+        n.type === "MACHINE_EXTENDED" ||
+        n.type === "STAFF_REQUEST" ||
+        n.type === "ORDER_CANCELLED",
+    );
+    if (!latest) return;
+    if (latest.id !== lastNotifIdRef.current) {
+      lastNotifIdRef.current = latest.id;
+      if (sseStatusRef.current !== "connected") playNotifSound();
+    }
+  }, [notifications as any]);
 
   const unreadNotifs = (notifications as any[]).filter(
     (n: any) =>
       !n.read &&
-      (n.type === "FOOD_ORDER" || n.type === "MACHINE_EXTENDED" || n.type === "STAFF_REQUEST"),
+      (n.type === "FOOD_ORDER" ||
+        n.type === "COMBO_ORDER" ||
+        n.type === "MACHINE_EXTENDED" ||
+        n.type === "STAFF_REQUEST"),
   );
 
   const pendingReqs = cursingReqs.filter((r: { status: string }) => r.status === "pending");
@@ -454,7 +537,10 @@ export function AdminShell() {
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setNotifOpen(true)}
+              onClick={() => {
+                setNotifOpen(true);
+                unlockAudio();
+              }}
               className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-secondary/50 hover:bg-secondary grid place-items-center border border-border transition-all"
               title={t("nav.notifications")}
             >
@@ -465,6 +551,26 @@ export function AdminShell() {
                 </span>
               )}
             </button>
+            <span
+              title={`SSE: ${sseStatus}`}
+              className={`hidden sm:inline-flex h-2 w-2 rounded-full ${
+                sseStatus === "connected"
+                  ? "bg-emerald-500"
+                  : sseStatus === "connecting"
+                    ? "bg-amber-400 animate-pulse"
+                    : "bg-red-500 animate-pulse"
+              }`}
+            />
+            {!audioUnlocked && (
+              <button
+                onClick={unlockAudio}
+                title="Bấm để bật chuông thông báo (trình duyệt chặn âm thanh tự động)"
+                className="h-9 px-3 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 text-xs font-semibold grid place-items-center border border-amber-500/40 transition-all animate-pulse"
+              >
+                <Volume2 className="h-4 w-4 mr-1.5" />
+                <span className="hidden sm:inline">Bật chuông</span>
+              </button>
+            )}
             <LanguageSwitcher />
             <button
               onClick={toggle}

@@ -1,6 +1,4 @@
-/**
- * Seed script for CyberNet. This file is database
- */
+
 import { PrismaClient } from "@prisma/client";
 import crypto from "node:crypto";
 
@@ -15,7 +13,7 @@ function encrypt(plaintext) {
   const enc = Buffer.concat([cipher.update(plaintext, "utf-8"), cipher.final()]);
   return `${iv.toString("hex")}:${enc.toString("hex")}`;
 }
-// Máy 01 đang sử dụng, còn 1:25 phút, khách vãng lai
+
 const machines = [
   {
     name: "Máy 01",
@@ -259,7 +257,6 @@ const combos = [
     ],
   },
 ];
-// Danh sách 5 khách hàng, trong đó có 3 khách VIP và 2 khách thường. Khách VIP có tổng chi tiêu trên 1 triệu và số lần ghé thăm trên 20 lần.
 const customers = [
   {
     name: "Nguyễn Văn A",

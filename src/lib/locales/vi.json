@@ -159,7 +159,8 @@
     "printReadyDesc": "Cửa sổ in đã mở. Vui lòng in hóa đơn rồi nhấn nút bên dưới.",
     "printWarning": "Máy sẽ chuyển sang trạng thái trống sau khi bạn xác nhận đã in xong. Nếu in lỗi, nhấn \"In lại\" để in lại hóa đơn.",
     "retryPrint": "In lại",
-    "printDoneConfirm": "Đã in xong, cho máy tiếp khách"
+    "printDoneConfirm": "Đã in xong, cho máy tiếp khách",
+    "printDoneQr": "Đã in hóa đơn QR. Máy giữ trạng thái đang sử dụng cho đến khi nhận được tiền."
   },
   "pos": {
     "title": "Bán hàng (POS)",
