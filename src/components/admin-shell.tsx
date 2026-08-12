@@ -546,7 +546,7 @@ export function AdminShell() {
             >
               <Bell className="h-4 w-4 text-secondary-foreground" />
               {notifCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center shadow-lg">
+                <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center shadow-lg">
                   {notifCount}
                 </span>
               )}
@@ -661,7 +661,7 @@ export function AdminShell() {
                       </div>
                       <Button
                         size="sm"
-                        className="shrink-0 h-7 px-2 text-[10px] bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0"
+                        className="shrink-0 h-7 px-2 text-[10px] bg-linear-to-r from-pink-500 to-rose-500 text-white border-0"
                         onClick={() => handleComplete(r.id)}
                       >
                         {t("notif.markDone")}
@@ -722,7 +722,7 @@ export function AdminShell() {
                   {!r.assignedTo && (
                     <Button
                       size="sm"
-                      className="shrink-0 h-7 px-2 text-[10px] bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0"
+                      className="shrink-0 h-7 px-2 text-[10px] bg-linear-to-r from-green-500 to-emerald-500 text-white border-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleClaimInvoice(r.id);

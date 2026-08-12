@@ -105,7 +105,7 @@ export default function RefundDialog({
     >
       <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border border-border bg-card/90 backdrop-blur-xl shadow-2xl">
         {/* Gradient Header */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-rose-600 via-pink-500 to-orange-500 px-6 py-5 text-white">
+        <div className="relative overflow-hidden bg-linear-to-r from-rose-600 via-pink-500 to-orange-500 px-6 py-5 text-white">
           <div className="absolute inset-0 bg-black/10" />
           <div className="relative flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/20 backdrop-blur border border-white/20 shadow-lg">
@@ -124,12 +124,12 @@ export default function RefundDialog({
 
         <div className="px-6 py-5 space-y-5">
           {/* Max Amount Info */}
-          <div className="rounded-xl bg-gradient-to-r from-rose-500/10 to-orange-500/10 border border-rose-500/20 p-4">
+          <div className="rounded-xl bg-linear-to-r from-rose-500/10 to-orange-500/10 border border-rose-500/20 p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-rose-300">
                 {t("refund.maxAmount", "Tối đa hoàn trả")}
               </span>
-              <span className="text-lg font-bold font-display bg-gradient-to-r from-rose-400 to-orange-400 bg-clip-text text-transparent">
+              <span className="text-lg font-bold font-display bg-linear-to-r from-rose-400 to-orange-400 bg-clip-text text-transparent">
                 {formatVND(maxAmount)}
               </span>
             </div>
@@ -213,7 +213,7 @@ export default function RefundDialog({
             <Button
               onClick={handleSubmit}
               disabled={refundMutation.isPending || amount <= 0}
-              className="flex-1 h-11 bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all text-sm font-semibold"
+              className="flex-1 h-11 bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all text-sm font-semibold"
             >
               {refundMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

@@ -363,8 +363,8 @@ function PlayerHome() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="relative overflow-hidden" style={fadeIn(0)}>
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-purple-600 via-pink-500 to-cyan-500" />
+        <div className="absolute inset-0 bg-linear-to-b from-black/20 to-transparent" />
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-xl bg-white/15 backdrop-blur border border-white/10 shadow-lg">
@@ -427,12 +427,12 @@ function PlayerHome() {
               }`}
             >
               {tab === tabItem.k && (
-                <span className="absolute inset-x-2 bottom-0 h-0.5 bg-gradient-to-r from-purple-400 to-cyan-400 rounded-full" />
+                <span className="absolute inset-x-2 bottom-0 h-0.5 bg-linear-to-r from-purple-400 to-cyan-400 rounded-full" />
               )}
               <tabItem.i className="h-4 w-4" />
               <span className="hidden sm:inline">{tabItem.l}</span>
               {tabItem.badge ? (
-                <span className="ml-0.5 grid h-5 min-w-[20px] px-1 place-items-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[10px] font-bold shadow-lg">
+                <span className="ml-0.5 grid h-5 min-w-5 px-1 place-items-center rounded-full bg-linear-to-r from-pink-500 to-rose-500 text-white text-[10px] font-bold shadow-lg">
                   {tabItem.badge}
                 </span>
               ) : null}
@@ -498,7 +498,7 @@ function PlayerHome() {
                     )}
                     <div className="border-t border-border pt-2 flex justify-between">
                       <span className="font-semibold text-foreground">{t("play.amountDue")}</span>
-                      <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                      <span className="text-2xl font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                         {formatVND(total)}
                       </span>
                     </div>
@@ -508,7 +508,7 @@ function PlayerHome() {
             </div>
             <div className="space-y-3 mt-5">
               <Button
-                className="w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 h-12 text-base"
+                className="w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 h-12 text-base"
                 onClick={() => setShowQRPayment(true)}
               >
                 <QrCode className="h-5 w-5 mr-2" />
@@ -566,7 +566,7 @@ function PlayerHome() {
             </div>
             <div className="text-sm text-muted-foreground mt-1">{t("play.staffNotifiedDesc")}</div>
             <Button
-              className="mt-4 w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0"
+              className="mt-4 w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0"
               onClick={() => setCallStaff(false)}
             >
               {t("common.gotIt")}
@@ -590,7 +590,7 @@ function PlayerHome() {
             </p>
             <div className="space-y-3 mt-5">
               <Button
-                className="w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 h-12 text-base"
+                className="w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 h-12 text-base"
                 onClick={() => {
                   setWarned15(false);
                   setWarnDismissed(true);
@@ -601,7 +601,7 @@ function PlayerHome() {
                 {t("play.pay")}
               </Button>
               <Button
-                className="w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 h-12 text-base"
+                className="w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 h-12 text-base"
                 onClick={() => {
                   setWarned15(false);
                   setWarnDismissed(true);
@@ -780,7 +780,7 @@ function HomeTab({
       <div style={fadeIn(0)}>
         <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
           {t("play.welcome")}{" "}
-          <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
             {machine.name}
           </span>
         </h1>
@@ -798,7 +798,7 @@ function HomeTab({
             style={{ transitionDelay: `${i * 50}ms` }}
           >
             <div
-              className={`inline-flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-br ${a.color} shadow-lg`}
+              className={`inline-flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-linear-to-br ${a.color} shadow-lg`}
             >
               <a.i className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
@@ -839,20 +839,20 @@ function HomeTab({
             <Sparkles className="h-4 w-4 text-pink-400" />
             <h3 className="font-semibold text-foreground/90">{t("play.specialService")}</h3>
           </div>
-          <div className="rounded-xl bg-gradient-to-r from-pink-500/10 to-rose-500/10 border border-pink-500/20 p-4">
+          <div className="rounded-xl bg-linear-to-r from-pink-500/10 to-rose-500/10 border border-pink-500/20 p-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <div className="font-semibold text-foreground text-base">
                   🎤 {t("play.curseService")}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{t("play.curseDesc")}</div>
-                <div className="text-sm font-bold bg-gradient-to-r from-pink-400 to-rose-400 bg-clip-text text-transparent mt-1">
+                <div className="text-sm font-bold bg-linear-to-r from-pink-400 to-rose-400 bg-clip-text text-transparent mt-1">
                   {formatVND(10000)}
                 </div>
               </div>
               <Button
                 size="sm"
-                className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0 shadow-lg shadow-pink-500/20 shrink-0"
+                className="bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0 shadow-lg shadow-pink-500/20 shrink-0"
                 onClick={() => setCursing(true)}
               >
                 <Zap className="h-4 w-4 mr-1" />
@@ -885,7 +885,7 @@ function HomeTab({
                 {t("common.cancel")}
               </Button>
               <Button
-                className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0 shadow-lg shadow-pink-500/20"
+                className="flex-1 bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0 shadow-lg shadow-pink-500/20"
                 onClick={handleCursing}
               >
                 <Zap className="h-4 w-4 mr-1" />
@@ -912,7 +912,7 @@ function HomeTab({
             </div>
             <div className="text-sm text-muted-foreground mt-1">{t("play.orderMessage")}</div>
             <Button
-              className="mt-4 w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0"
+              className="mt-4 w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0"
               onClick={() => setCursingDone(false)}
             >
               {t("common.gotIt")}
@@ -1046,7 +1046,7 @@ function FoodTab({
                 </div>
                 <div className="text-[11px] sm:text-xs text-muted-foreground">{m.category}</div>
                 <div className="flex items-center justify-between mt-3 gap-1">
-                  <div className="font-display font-bold text-sm sm:text-base bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                  <div className="font-display font-bold text-sm sm:text-base bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                     {formatVND(m.price)}
                   </div>
                   {cart[m.id] ? (
@@ -1072,7 +1072,7 @@ function FoodTab({
                       size="sm"
                       onClick={() => add(m.id)}
                       disabled={m.stock === 0}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 text-xs h-8"
+                        className="bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 text-xs h-8"
                     >
                       {m.stock === 0 ? t("common.outOfStock") : t("common.add")}
                     </Button>
@@ -1129,13 +1129,13 @@ function FoodTab({
               </div>
               <div className="flex justify-between border-t border-border mt-4 pt-3">
                 <span className="font-semibold text-foreground/90">{t("common.total")}</span>
-                <span className="font-display text-xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                  <span className="font-display text-xl font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                   {formatVND(total)}
                 </span>
               </div>
               <div className="space-y-2 mt-4">
                 <Button
-                  className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0 h-11 shadow-lg shadow-pink-500/20"
+                    className="w-full bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0 h-11 shadow-lg shadow-pink-500/20"
                   size="lg"
                   onClick={handleSend}
                 >
@@ -1176,7 +1176,7 @@ function FoodTab({
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">{t("play.orderOther")}</div>
                 <Button
-                  className="mt-4 w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0"
+                  className="mt-4 w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0"
                   onClick={() => setOutOfStockMsg(false)}
                 >
                   {t("common.gotIt")}
@@ -1188,7 +1188,7 @@ function FoodTab({
 
         {/* Active orders */}
         {pendingOrders.length > 0 && (
-          <Card className="p-5 h-fit lg:sticky lg:top-[420px] border border-border bg-card/50">
+          <Card className="p-5 h-fit lg:sticky lg:top-105 border border-border bg-card/50">
             <h3 className="font-display text-lg font-bold text-foreground mb-3 flex items-center gap-2">
               <Bell className="h-4 w-4 text-orange-400" />
               {t("play.activeOrders")}
@@ -1352,7 +1352,7 @@ function ExtendTab({
       </h2>
       <p className="text-muted-foreground mb-6">
         {t("play.remainingLabel")}{" "}
-        <span className="font-mono font-semibold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+        <span className="font-mono font-semibold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
           {Math.floor(remaining / 3600)}h {Math.floor((remaining % 3600) / 60)}'
         </span>
       </p>
@@ -1404,12 +1404,12 @@ function ExtendTab({
         <div className="flex items-center justify-between mt-4">
           <div>
             <div className="text-xs text-muted-foreground">{t("play.amountDue")}</div>
-            <div className="font-display text-lg font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+            <div className="font-display text-lg font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
               {formatVND(Math.round(manualHours * pricePerHour))}
             </div>
           </div>
           <Button
-            className="bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 text-white border-0 shadow-lg shadow-purple-500/20"
+            className="bg-linear-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 text-white border-0 shadow-lg shadow-purple-500/20"
             onClick={() => {
               const seconds = Math.round(manualHours * 3600);
               const amount = Math.round(manualHours * pricePerHour);
@@ -1456,7 +1456,7 @@ function ExtendTab({
                   {p.label}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{p.sub}</div>
-                <div className="mt-3 font-display text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                <div className="mt-3 font-display text-lg sm:text-xl font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                   {formatVND(p.price)}
                 </div>
               </div>
@@ -1487,7 +1487,7 @@ function ExtendTab({
           </div>
           <Button
             size="lg"
-            className="bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 text-white border-0 shadow-lg shadow-purple-500/20"
+            className="bg-linear-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 text-white border-0 shadow-lg shadow-purple-500/20"
             onClick={() => setPaying(true)}
           >
             <Send className="h-4 w-4 mr-2" />
@@ -1526,7 +1526,7 @@ function ExtendTab({
               </div>
               <div className="flex justify-between bg-muted rounded-lg px-3 py-2">
                 <span className="text-muted-foreground">Giá combo</span>
-                <b className="font-display text-lg bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                <b className="font-display text-lg bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                   {formatVND(pick.price)}
                 </b>
               </div>
@@ -1549,7 +1549,7 @@ function ExtendTab({
                 {t("common.cancel")}
               </Button>
               <Button
-                className="flex-1 bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 text-white border-0 shadow-lg shadow-purple-500/20"
+                className="flex-1 bg-linear-to-r from-purple-500 to-cyan-400 hover:from-purple-600 hover:to-cyan-500 text-white border-0 shadow-lg shadow-purple-500/20"
                 disabled={ordering}
                 onClick={handleOrderCombo}
               >
@@ -1584,7 +1584,7 @@ function ExtendTab({
                   {ordered.label} đã hủy, giờ chơi đã được hoàn lại.
                 </div>
                 <Button
-                  className="mt-4 w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0"
+                  className="mt-4 w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0"
                   onClick={() => {
                     setOrdered(null);
                     setCancelDone(false);
@@ -1614,7 +1614,7 @@ function ExtendTab({
                   </Button>
                 )}
                 <Button
-                  className="mt-4 w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0"
+                    className="mt-4 w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0"
                   onClick={() => {
                     setOrdered(null);
                     setCancelDone(false);
@@ -1679,7 +1679,7 @@ function PayTab({
           <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
             {t("play.amountDue")}
           </div>
-          <div className="font-display text-3xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+          <div className="font-display text-3xl font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
             {formatVND(displayAmount)}
           </div>
         </div>
@@ -1738,7 +1738,7 @@ function PayTab({
 
         <div className="space-y-3">
           <Button
-            className="w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 h-12 text-base"
+            className="w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 h-12 text-base"
             onClick={onPayQR}
           >
             <QrCode className="h-5 w-5 mr-2" />
@@ -1762,7 +1762,7 @@ function AccountTab({ machine }: { machine: any }) {
   return (
     <div className="grid lg:grid-cols-[320px_1fr] gap-6">
       <Card className="p-6 border border-border bg-card/50">
-        <div className="h-20 w-20 rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 grid place-items-center text-white font-display text-2xl font-bold shadow-lg shadow-purple-500/30 mx-auto">
+        <div className="h-20 w-20 rounded-full bg-linear-to-br from-purple-500 to-cyan-400 grid place-items-center text-white font-display text-2xl font-bold shadow-lg shadow-purple-500/30 mx-auto">
           <Monitor className="h-8 w-8" />
         </div>
         <div className="mt-4 font-display text-xl font-bold text-foreground text-center">
@@ -1772,14 +1772,14 @@ function AccountTab({ machine }: { machine: any }) {
           {machine.area}
           {machine.ip ? ` · IP: ${machine.ip}` : ""}
         </div>
-        <div className="mt-4 rounded-xl bg-gradient-to-r from-yellow-500/15 to-orange-500/15 border border-yellow-500/20 text-yellow-400 p-3 flex items-center gap-2 justify-center">
+        <div className="mt-4 rounded-xl bg-linear-to-r from-yellow-500/15 to-orange-500/15 border border-yellow-500/20 text-yellow-400 p-3 flex items-center gap-2 justify-center">
           <Sparkles className="h-4 w-4" />
           <div className="text-sm font-semibold">{machine.area}</div>
         </div>
         <div className="mt-4 space-y-2.5 text-sm">
           <div className="flex justify-between bg-muted rounded-lg px-3 py-2">
             <span className="text-muted-foreground">{t("play.pricePerHour")}</span>
-            <b className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+            <b className="bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
               {formatVND(machine.pricePerHour)}
             </b>
           </div>
@@ -1812,7 +1812,7 @@ function AccountTab({ machine }: { machine: any }) {
           </div>
           <div className="flex justify-between bg-muted rounded-lg px-3 py-3">
             <span className="text-muted-foreground">{t("play.pricePerHour")}</span>
-            <b className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+            <b className="bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
               {formatVND(machine.pricePerHour)}
             </b>
           </div>

@@ -367,14 +367,14 @@ function POS() {
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-200/40 via-background to-cyan-200/40 dark:from-purple-950/40 dark:via-background dark:to-cyan-950/40" />
+      <div className="absolute inset-0 bg-linear-to-br from-purple-200/40 via-background to-cyan-200/40 dark:from-purple-950/40 dark:via-background dark:to-cyan-950/40" />
       <FloatingParticle delay={0} size={5} left="5%" top="10%" />
       <FloatingParticle delay={1.5} size={3} left="90%" top="20%" />
       <FloatingParticle delay={0.8} size={4} left="10%" top="80%" />
       <FloatingParticle delay={2} size={3} left="85%" top="70%" />
-      <div className="absolute top-0 -left-10 w-[300px] h-[300px] bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
+      <div className="absolute top-0 -left-10 w-75 h-75 bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
       <div
-        className="absolute bottom-0 -right-10 w-[300px] h-[300px] bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
+        className="absolute bottom-0 -right-10 w-75 h-75 bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
         style={{ animationDelay: "2s" }}
       />
 
@@ -513,7 +513,7 @@ function POS() {
                               <button
                                 onClick={() => printKitchenMutation.mutate(inv)}
                                 disabled={printKitchenMutation.isPending}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all disabled:opacity-50"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-linear-to-r from-orange-500 to-amber-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all disabled:opacity-50"
                               >
                                 <Printer className="h-3.5 w-3.5" />
                                 {t("pos.printKitchen")}
@@ -530,7 +530,7 @@ function POS() {
                                     qc.invalidateQueries({ queryKey: ["orders"] });
                                   });
                                 }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-green-500 to-emerald-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-green-500/20 transition-all"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-linear-to-r from-green-500 to-emerald-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-green-500/20 transition-all"
                               >
                                 <PackageCheck className="h-3.5 w-3.5" />
                                 {t("pos.orderMarkDelivered")}
@@ -655,7 +655,7 @@ function POS() {
                             <button
                               onClick={() => printKitchenMutation.mutate(inv)}
                               disabled={printKitchenMutation.isPending}
-                              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-amber-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all disabled:opacity-50"
+                              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-linear-to-r from-orange-500 to-amber-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all disabled:opacity-50"
                             >
                               <Printer className="h-3.5 w-3.5" />
                               {t("pos.printKitchen")}
@@ -709,7 +709,7 @@ function POS() {
                           <button
                             onClick={() => printKitchenMutation.mutate(inv)}
                             disabled={printKitchenMutation.isPending}
-                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-amber-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all disabled:opacity-50"
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-linear-to-r from-orange-500 to-amber-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all disabled:opacity-50"
                           >
                             <Printer className="h-3.5 w-3.5" />
                             {t("pos.printKitchen")}
@@ -777,7 +777,7 @@ function POS() {
                     )}
                     <div className="flex justify-between pt-2 border-t border-border mt-2">
                       <span className="font-semibold text-foreground">{t("pos.settleTotal")}</span>
-                      <span className="font-display text-xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                      <span className="font-display text-xl font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                         {formatVND(settleFinalTotal)}
                       </span>
                     </div>
@@ -814,7 +814,7 @@ function POS() {
                       settleMutation.isPending ||
                       (unpaidInvoices.length === 0 && settleTimeCost === 0)
                     }
-                    className="w-full bg-gradient-to-r from-green-500 to-emerald-400 text-white border-0 shadow-lg shadow-green-500/20 hover:shadow-green-500/40 transition-all"
+                    className="w-full bg-linear-to-r from-green-500 to-emerald-400 text-white border-0 shadow-lg shadow-green-500/20 hover:shadow-green-500/40 transition-all"
                     size="lg"
                     onClick={() => settleMutation.mutate()}
                   >
@@ -860,7 +860,7 @@ function POS() {
                     <div className="mt-2 font-medium text-sm text-foreground">{m.name}</div>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-muted-foreground">{m.category}</span>
-                      <span className="text-sm font-semibold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                      <span className="text-sm font-semibold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                         {formatVND(m.price)}
                       </span>
                     </div>
@@ -1089,7 +1089,7 @@ function POS() {
                 )}
                 <div className="flex justify-between pt-2 border-t border-border mt-2">
                   <span className="font-semibold text-foreground">{t("common.total")}</span>
-                  <span className="font-display text-xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                  <span className="font-display text-xl font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                     {formatVND(total)}
                   </span>
                 </div>
@@ -1124,7 +1124,7 @@ function POS() {
               {mode === "play" ? (
                 <Button
                   disabled={pay.isPending || !selectedMachine || total === 0}
-                  className="w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all"
+                  className="w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all"
                   size="lg"
                   onClick={() => pay.mutate()}
                 >
@@ -1133,7 +1133,7 @@ function POS() {
               ) : (
                 <Button
                   disabled={createFoodOrderMutation.isPending || items.length === 0}
-                  className="w-full bg-gradient-to-r from-orange-500 to-amber-400 text-white border-0 shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all"
+                    className="w-full bg-linear-to-r from-orange-500 to-amber-400 text-white border-0 shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all"
                   size="lg"
                   onClick={() => createFoodOrderMutation.mutate()}
                 >

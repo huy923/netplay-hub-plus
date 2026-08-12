@@ -265,7 +265,7 @@ export default function QRPayment({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border border-border bg-card/90 backdrop-blur-xl shadow-2xl">
         {/* Gradient Header */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 px-6 py-5 text-white">
+        <div className="relative overflow-hidden bg-linear-to-r from-purple-600 via-pink-500 to-cyan-500 px-6 py-5 text-white">
           <div className="absolute inset-0 bg-black/10" />
           <div className="relative flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/20 backdrop-blur border border-white/20 shadow-lg">
@@ -286,7 +286,7 @@ export default function QRPayment({
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
               {t("qr.amount", "Số tiền")}
             </p>
-            <p className="text-3xl font-bold font-display bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+            <p className="text-3xl font-bold font-display bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
               {formatVND(snapshotAmount)}
             </p>
           </div>
@@ -295,15 +295,15 @@ export default function QRPayment({
           {qrUrl ? (
             <div className="flex justify-center">
               <div className="relative rounded-2xl bg-white p-3 shadow-lg border border-border">
-                <img src={qrUrl} alt="QR Code" className="h-[240px] w-[240px]" />
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-purple-500 to-cyan-400 px-3 py-0.5 text-[10px] font-bold text-white shadow-md">
+                <img src={qrUrl} alt="QR Code" className="h-60 w-60" />
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-linear-to-r from-purple-500 to-cyan-400 px-3 py-0.5 text-[10px] font-bold text-white shadow-md">
                   {bankInfo?.bankName ?? "Bank"}
                 </div>
               </div>
             </div>
           ) : (
             <div className="flex justify-center py-8">
-              <div className="grid h-[240px] w-[240px] place-items-center rounded-2xl bg-muted/50 border border-dashed border-border">
+              <div className="grid h-60 w-[240px] place-items-center rounded-2xl bg-muted/50 border border-dashed border-border">
                 <XCircle className="h-8 w-8 text-muted-foreground/50" />
               </div>
             </div>
@@ -337,7 +337,7 @@ export default function QRPayment({
               {note && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">{t("qr.note", "Nội dung")}</span>
-                  <span className="text-sm font-medium max-w-[200px] truncate">{note}</span>
+                  <span className="text-sm font-medium max-w-50 truncate">{note}</span>
                 </div>
               )}
             </div>
@@ -345,7 +345,7 @@ export default function QRPayment({
 
           {/* Status Indicator */}
           {showStatus && status === "idle" && (
-            <div className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 p-3">
+            <div className="flex items-center gap-3 rounded-xl bg-linear-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 p-3">
               <div className="relative">
                 <Clock className="h-4 w-4 text-purple-400 animate-pulse" />
                 <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-green-400 animate-ping" />
@@ -405,7 +405,7 @@ export default function QRPayment({
               <Button
                 onClick={handleConfirmPayment}
                 disabled={confirmMutation.isPending}
-                className="flex-1 h-11 bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all text-sm font-semibold"
+                className="flex-1 h-11 bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all text-sm font-semibold"
               >
                 {confirmMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -423,7 +423,7 @@ export default function QRPayment({
               status === "error") && (
               <Button
                 onClick={() => onOpenChange(false)}
-                className="flex-1 h-11 bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all text-sm font-semibold"
+                className="flex-1 h-11 bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all text-sm font-semibold"
               >
                 {t("qr.close", "Đóng")}
               </Button>

@@ -128,14 +128,14 @@ function PurchaseOrders() {
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-200/40 via-background to-teal-200/40 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/40" />
+      <div className="absolute inset-0 bg-linear-to-br from-emerald-200/40 via-background to-teal-200/40 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/40" />
       <FloatingParticle delay={0} size={5} left="5%" top="10%" />
       <FloatingParticle delay={1.5} size={3} left="90%" top="20%" />
       <FloatingParticle delay={0.8} size={4} left="10%" top="80%" />
       <FloatingParticle delay={2} size={3} left="85%" top="70%" />
-      <div className="absolute top-0 -left-10 w-[300px] h-[300px] bg-emerald-300/10 rounded-full blur-[120px] animate-pulse dark:bg-emerald-600/15" />
+      <div className="absolute top-0 -left-10 w-75 h-75 bg-emerald-300/10 rounded-full blur-[120px] animate-pulse dark:bg-emerald-600/15" />
       <div
-        className="absolute bottom-0 -right-10 w-[300px] h-[300px] bg-teal-300/10 rounded-full blur-[120px] animate-pulse dark:bg-teal-500/15"
+        className="absolute bottom-0 -right-10 w-75 h-75 bg-teal-300/10 rounded-full blur-[120px] animate-pulse dark:bg-teal-500/15"
         style={{ animationDelay: "2s" }}
       />
 
@@ -155,7 +155,7 @@ function PurchaseOrders() {
           </div>
           <Dialog open={openAdd} onOpenChange={setOpenAdd}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-emerald-500 to-teal-400 text-white border-0 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all">
+              <Button className="bg-linear-to-r from-emerald-500 to-teal-400 text-white border-0 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all">
                 <Plus className="h-4 w-4 mr-1" />
                 {t("purchaseOrder.add")}
               </Button>
@@ -222,7 +222,7 @@ function PurchaseOrders() {
                       {formatVND(po.totalCost)}
                     </td>
                     <td className="py-3 text-muted-foreground">{po.supplier || "—"}</td>
-                    <td className="py-3 text-muted-foreground max-w-[150px] truncate">
+                    <td className="py-3 text-muted-foreground max-w-37.5 truncate">
                       {po.note || "—"}
                     </td>
                     <td className="py-3 text-muted-foreground text-xs">
@@ -341,7 +341,7 @@ function POForm({
       <DialogFooter>
         <Button
           disabled={loading || !itemId || qty < 1}
-          className="bg-gradient-to-r from-emerald-500 to-teal-400 text-white border-0 shadow-lg shadow-emerald-500/20"
+          className="bg-linear-to-r from-emerald-500 to-teal-400 text-white border-0 shadow-lg shadow-emerald-500/20"
           onClick={() => onSubmit({ itemId, qty, unitCost, supplier, note })}
         >
           {loading ? t("common.saving") : t("common.save")}

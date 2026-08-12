@@ -183,9 +183,9 @@ function Menu() {
       <FloatingParticle delay={1.5} size={3} left="90%" top="20%" />
       <FloatingParticle delay={0.8} size={4} left="10%" top="80%" />
       <FloatingParticle delay={2} size={3} left="85%" top="70%" />
-      <div className="absolute top-0 -left-10 w-[300px] h-[300px] bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
+      <div className="absolute top-0 -left-10 w-75 h-75 bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
       <div
-        className="absolute bottom-0 -right-10 w-[300px] h-[300px] bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
+        className="absolute bottom-0 -right-10 w-75 h-75 bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
         style={{ animationDelay: "2s" }}
       />
 
@@ -268,7 +268,7 @@ function Menu() {
                   }}
                 >
                   <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all">
+                    <Button className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all">
                       <Plus className="h-4 w-4 mr-1" />
                       {t("menuPage.addItem")}
                     </Button>
@@ -321,7 +321,7 @@ function Menu() {
                     <div className="mt-3 font-semibold text-lg text-foreground">{m.name}</div>
                     <div className="text-xs text-muted-foreground">{m.category}</div>
                     <div className="flex items-center justify-between mt-3 mb-3">
-                      <span className="font-display text-lg font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                      <span className="font-display text-lg font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                         {formatVND(m.price)}
                       </span>
                       <div className="flex gap-1">
@@ -400,7 +400,7 @@ function Menu() {
                     ))}
                   </div>
                   <div className="flex items-center justify-between mt-3">
-                    <span className="font-display text-lg font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                    <span className="font-display text-lg font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                       {formatVND(c.price)}
                     </span>
                     <div className="flex gap-1">
@@ -470,7 +470,7 @@ function Menu() {
               </p>
               <Dialog open={openAdd} onOpenChange={setOpenAdd}>
                 <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all">
+                  <Button className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all">
                     <Plus className="h-4 w-4 mr-1" />
                     {t("menuPage.addItem")}
                   </Button>
@@ -521,7 +521,7 @@ function Menu() {
                     <div className="mt-3 font-semibold text-lg text-foreground">{m.name}</div>
                     <div className="text-xs text-muted-foreground">{m.category}</div>
                     <div className="flex items-center justify-between mt-3 mb-3">
-                      <span className="font-display text-lg font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                      <span className="font-display text-lg font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                         {formatVND(m.price)}
                       </span>
                       <div className="flex gap-1">
@@ -586,7 +586,7 @@ function Menu() {
                 {t("menuPage.combosOnly", { count: combos.length })}
               </p>
               <Button
-                className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all"
+                className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all"
                 onClick={() => {
                   setComboAddKey((k) => k + 1);
                   setOpenComboAdd(true);
@@ -629,7 +629,7 @@ function Menu() {
                     ))}
                   </div>
                   <div className="flex items-center justify-between mt-3">
-                    <span className="font-display text-lg font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                    <span className="font-display text-lg font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                       {formatVND(c.price)}
                     </span>
                     <div className="flex gap-1">
@@ -777,7 +777,7 @@ function MenuForm({
       <DialogFooter>
         <Button
           disabled={loading || !name || price <= 0}
-          className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
+          className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
           onClick={() => onSubmit({ name, category, price, image, stock })}
         >
           {loading ? t("common.saving") : t("common.save")}
@@ -1078,7 +1078,7 @@ function ComboForm({
       <DialogFooter>
         <Button
           disabled={loading || !name || price <= 0 || seconds <= 0 || selectedItems.length === 0}
-          className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
+          className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
           onClick={() => onSubmit({ name, price, seconds, image, itemIds: selectedItems })}
         >
           {loading ? t("common.saving") : t("common.save")}

@@ -84,14 +84,14 @@ function AuditLog() {
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-200/40 via-background to-cyan-200/40 dark:from-purple-950/40 dark:via-background dark:to-cyan-950/40" />
+      <div className="absolute inset-0 bg-linear-to-br from-purple-200/40 via-background to-cyan-200/40 dark:from-purple-950/40 dark:via-background dark:to-cyan-950/40" />
       <FloatingParticle delay={0} size={5} left="5%" top="10%" />
       <FloatingParticle delay={1.5} size={3} left="90%" top="20%" />
       <FloatingParticle delay={0.8} size={4} left="10%" top="80%" />
       <FloatingParticle delay={2} size={3} left="85%" top="70%" />
-      <div className="absolute top-0 -left-10 w-[300px] h-[300px] bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
+      <div className="absolute top-0 -left-10 w-75 h-75 bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
       <div
-        className="absolute bottom-0 -right-10 w-[300px] h-[300px] bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
+        className="absolute bottom-0 -right-10 w-75 h-75 bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
         style={{ animationDelay: "2s" }}
       />
 
@@ -164,7 +164,7 @@ function AuditLog() {
                           </span>
                         </td>
                         <td className="py-2 text-muted-foreground">{log.target ?? "—"}</td>
-                        <td className="py-2 text-muted-foreground max-w-[200px] truncate">
+                        <td className="py-2 text-muted-foreground max-w-50 truncate">
                           {log.details ?? "—"}
                         </td>
                         <td className="py-2 text-muted-foreground font-mono text-xs">

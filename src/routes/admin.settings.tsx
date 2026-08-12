@@ -102,7 +102,7 @@ function PasswordGate({ onSubmit }: { onSubmit: (pw: string) => void }) {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <Card className="p-8 w-full max-w-sm border border-border bg-card/80 backdrop-blur-xl text-center space-y-6">
-        <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-cyan-500/20 border border-purple-500/30 grid place-items-center">
+        <div className="mx-auto w-16 h-16 rounded-2xl bg-linear-to-br from-purple-500/20 to-cyan-500/20 border border-purple-500/30 grid place-items-center">
           <KeyRound className="h-8 w-8 text-purple-400" />
         </div>
         <div>
@@ -135,7 +135,7 @@ function PasswordGate({ onSubmit }: { onSubmit: (pw: string) => void }) {
           <Button
             onClick={handleSubmit}
             disabled={!password || loading}
-            className="w-full bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
+            className="w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
           >
             <Lock className="h-4 w-4 mr-2" />
             {loading ? t("common.saving") : t("common.gotIt")}
@@ -229,9 +229,9 @@ function SettingsContent() {
       <FloatingParticle delay={1.5} size={3} left="90%" top="20%" />
       <FloatingParticle delay={0.8} size={4} left="10%" top="80%" />
       <FloatingParticle delay={2} size={3} left="85%" top="70%" />
-      <div className="absolute top-0 -left-10 w-75 h-[300px] bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
+      <div className="absolute top-0 -left-10 w-75 h-75 bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
       <div
-        className="absolute bottom-0 -right-10 w-[300px] h-[300px] bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
+        className="absolute bottom-0 -right-10 w-75 h-75 bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
         style={{ animationDelay: "2s" }}
       />
 
@@ -301,7 +301,7 @@ function SettingsContent() {
               <Button
                 type="submit"
                 disabled={saveMutation.isPending}
-                className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
+                className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
               >
                 {saveMutation.isPending ? t("common.saving") : t("settings.saveInfo")}
               </Button>
@@ -355,7 +355,7 @@ function SettingsContent() {
               <Button
                 type="submit"
                 disabled={saveMutation.isPending}
-                className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
+                className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
               >
                 {saveMutation.isPending ? t("common.saving") : t("settings.updatePrices")}
               </Button>
@@ -547,7 +547,7 @@ function SecurityCard({
         <Button
           onClick={handleChangePassword}
           disabled={loading || !currentPw || !newPw || !confirmPw}
-          className="bg-gradient-to-r from-red-500 to-orange-400 text-white border-0 shadow-lg shadow-red-500/20"
+          className="bg-linear-to-r from-red-500 to-orange-400 text-white border-0 shadow-lg shadow-red-500/20"
         >
           <Lock className="h-4 w-4 mr-2" />
           {loading ? t("common.saving") : t("settings.changePassword")}
@@ -892,7 +892,7 @@ function BankCard({
           type="button"
           onClick={handleSave}
           disabled={saveMutation.isPending}
-          className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
+          className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
         >
           {saveMutation.isPending ? t("common.saving") : t("settings.saveBank")}
         </Button>

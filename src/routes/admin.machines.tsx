@@ -313,9 +313,9 @@ function Machines() {
       <FloatingParticle delay={1.5} size={3} left="90%" top="20%" />
       <FloatingParticle delay={0.8} size={4} left="10%" top="80%" />
       <FloatingParticle delay={2} size={3} left="85%" top="70%" />
-      <div className="absolute top-0 -left-10 w-[300px] h-[300px] bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
+      <div className="absolute top-0 -left-10 w-75 h-75 bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
       <div
-        className="absolute bottom-0 -right-10 w-[300px] h-[300px] bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
+        className="absolute bottom-0 -right-10 w-75 h-75 bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
         style={{ animationDelay: "2s" }}
       />
 
@@ -343,7 +343,7 @@ function Machines() {
             }}
           >
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all">
+              <Button className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all">
                 <Plus className="h-4 w-4 mr-1" /> {t("machine.add")}
               </Button>
             </DialogTrigger>
@@ -462,7 +462,7 @@ function Machines() {
                 {m.status === "idle" && (
                   <Button
                     size="sm"
-                    className="w-full mt-4 bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
+                    className="w-full mt-4 bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
                     onClick={() => setAssigning(m)}
                   >
                     {t("machine.assign")}
@@ -693,7 +693,7 @@ function EndSessionDialog({
               )}
               <div className="border-t border-border pt-2 flex justify-between">
                 <span className="font-semibold text-foreground">Tổng cộng</span>
-                <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                <span className="text-xl font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                   {formatVND(finalTotal)}
                 </span>
               </div>
@@ -712,7 +712,7 @@ function EndSessionDialog({
               <Button
                 size="sm"
                 variant={method === "cash" ? "default" : "outline"}
-                className={`flex-1 ${method === "cash" ? "bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0" : "border-border"}`}
+                className={`flex-1 ${method === "cash" ? "bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0" : "border-border"}`}
                 onClick={() => setMethod("cash")}
               >
                 <Banknote className="h-4 w-4 mr-1" /> Tiền mặt
@@ -720,7 +720,7 @@ function EndSessionDialog({
               <Button
                 size="sm"
                 variant={method === "qr" ? "default" : "outline"}
-                className={`flex-1 ${method === "qr" ? "bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0" : "border-border"}`}
+                className={`flex-1 ${method === "qr" ? "bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0" : "border-border"}`}
                 onClick={() => setMethod("qr")}
               >
                 <QrCode className="h-4 w-4 mr-1" /> QR
@@ -730,7 +730,7 @@ function EndSessionDialog({
           <DialogFooter className="mt-2">
             <Button
               disabled={isPending}
-              className="w-full h-11 text-base bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
+              className="w-full h-11 text-base bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
               onClick={() => {
                 if (method === "qr") {
                   setShowQR(true);
@@ -775,7 +775,7 @@ function EndSessionDialog({
           </DialogHeader>
           <DialogFooter className="flex-col gap-2 mt-2">
             <Button
-              className="w-full h-10 bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0"
+              className="w-full h-10 bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0"
               onClick={onPrintDone}
             >
               <CheckCircle2 className="h-4 w-4 mr-2" /> Xác nhận
@@ -887,7 +887,7 @@ function MachineForm({
       <DialogFooter>
         <Button
           disabled={loading || !name || price <= 0}
-          className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
+          className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
           onClick={() => onSubmit({ name, area, ip: ip || undefined, pricePerHour: price, status })}
         >
           {loading ? t("common.saving") : t("common.save")}
@@ -966,7 +966,7 @@ function AssignDialog({
         <DialogFooter className="mt-2">
           <Button
             disabled={hours <= 0 || loading}
-            className="w-full h-11 text-base bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
+            className="w-full h-11 text-base bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
             onClick={() => onAssign(hours)}
           >
             {loading ? t("common.processing") : t("common.start")}

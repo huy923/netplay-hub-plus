@@ -289,7 +289,7 @@ function KeyboardForm({
         </Button>
         <Button
           disabled={!name || !brand || mutation.isPending}
-          className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0"
+          className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0"
           onClick={() => mutation.mutate()}
         >
           {mutation.isPending ? t("common.processing") : edit ? t("common.save") : t("common.add")}
@@ -356,9 +356,9 @@ function Keyboards() {
       <FloatingParticle delay={1.5} size={3} left="90%" top="20%" />
       <FloatingParticle delay={0.8} size={4} left="10%" top="80%" />
       <FloatingParticle delay={2} size={3} left="85%" top="70%" />
-      <div className="absolute top-0 -left-10 w-[300px] h-[300px] bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
+      <div className="absolute top-0 -left-10 w-75 h-75 bg-purple-300/10 rounded-full blur-[120px] animate-pulse dark:bg-purple-600/15" />
       <div
-        className="absolute bottom-0 -right-10 w-[300px] h-[300px] bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
+        className="absolute bottom-0 -right-10 w-75 h-75 bg-cyan-300/10 rounded-full blur-[120px] animate-pulse dark:bg-cyan-500/15"
         style={{ animationDelay: "2s" }}
       />
 
@@ -381,7 +381,7 @@ function Keyboards() {
           </div>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all">
+              <Button className="bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all">
                 <Plus className="h-4 w-4 mr-1" /> {t("keyboard.add")}
               </Button>
             </DialogTrigger>
@@ -457,7 +457,7 @@ function Keyboards() {
                 <div className="flex-1">
                   <div className="font-display text-lg font-bold text-foreground">{kb.name}</div>
                   <div className="text-xs text-muted-foreground mb-2">{kb.brand}</div>
-                  <div className="font-mono font-semibold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                  <div className="font-mono font-semibold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                     {formatVND(kb.pricePerHour)}/h
                   </div>
                 </div>
@@ -511,7 +511,7 @@ function Keyboards() {
                     <div className="flex gap-2 flex-wrap">
                       <Button
                         size="sm"
-                        className="flex-1 bg-gradient-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
+                        className="flex-1 bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0 shadow-lg shadow-purple-500/20"
                         onClick={() => setRentKb(kb)}
                       >
                         {t("keyboard.rent")}

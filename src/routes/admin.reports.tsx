@@ -353,7 +353,7 @@ function Reports() {
             </div>
             {prediction?.nextMonth != null ? (
               <div className="space-y-4">
-                <div className="p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-cyan-500/10 border border-purple-500/20">
+                <div className="p-4 rounded-lg bg-linear-to-br from-purple-500/10 to-cyan-500/10 border border-purple-500/20">
                   <div className="text-sm text-muted-foreground">{t("report.predictedNext")}</div>
                   <div className="font-display text-2xl font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mt-1">
                     {formatVND(prediction.nextMonth)}

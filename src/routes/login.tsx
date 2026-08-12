@@ -62,10 +62,10 @@ function Login() {
       <FloatingOrb className="w-80 h-80 bg-purple-600 -bottom-20 -right-20" />
       <FloatingOrb className="w-64 h-64 bg-cyan-500 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
 
-      <div className="relative z-10 w-full max-w-[420px] mx-4">
+      <div className="relative z-10 w-full max-w-105 mx-4">
         <div className="rounded-2xl border bg-card/80 backdrop-blur-xl shadow-2xl p-8 space-y-6">
           <div className="text-center space-y-3">
-            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-primary to-purple-600 text-primary-foreground shadow-glow animate-pulse">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-linear-to-br from-primary to-purple-600 text-primary-foreground shadow-glow animate-pulse">
               <Gamepad2 className="h-8 w-8" />
             </div>
             <div>
@@ -127,7 +127,7 @@ function Login() {
 
             <Button
               type="submit"
-              className="w-full h-11 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-primary-foreground font-semibold shadow-glow transition-all duration-300 disabled:opacity-50"
+              className="w-full h-11 bg-linear-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-primary-foreground font-semibold shadow-glow transition-all duration-300 disabled:opacity-50"
               disabled={loading}
             >
               {loading ? (
