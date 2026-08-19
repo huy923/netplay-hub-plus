@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma.server";
-import { encrypt } from "@/lib/encryption";
+import { hashPassword } from "@/lib/encryption";
 import { broadcast } from "@/lib/sse-events.server";
 import { requireAdmin } from "@/lib/auth.server";
 import { createAuditLog } from "./_shared";
@@ -24,7 +25,9 @@ export const createUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     await requireAdmin();
-    const user = await prisma.user.create({ data: { ...data, password: encrypt(data.password) } });
+    const user = await prisma.user.create({
+      data: { ...data, password: await hashPassword(data.password) },
+    });
     await createAuditLog("system", "system", "create_user", user.username);
     broadcast("user:updated");
     return user;
@@ -43,8 +46,8 @@ export const updateUser = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await requireAdmin();
     const { id, password, ...rest } = data;
-    const updateData: any = { ...rest };
-    if (password && password.length > 0) updateData.password = encrypt(password);
+    const updateData: Prisma.UserUpdateInput = { ...rest };
+    if (password && password.length > 0) updateData.password = await hashPassword(password);
     const user = await prisma.user.update({ where: { id }, data: updateData });
     await createAuditLog("system", "system", "update_user", user.username);
     broadcast("user:updated");

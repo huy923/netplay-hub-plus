@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma.server";
 import { broadcast } from "@/lib/sse-events.server";
-import { requireAdmin } from "@/lib/auth.server";
+import { requireAdmin, requireKioskOrAdmin } from "@/lib/auth.server";
 import { getDecryptedSettings } from "./_shared";
 import { formatVND } from "@/lib/format";
 
@@ -47,7 +47,7 @@ export const createPayment = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       invoiceId: z.string().optional(),
-      amount: z.number().int().min(0),
+      amount: z.number().int().min(1000),
       method: z.string().default("qr"),
       customer: z.string().optional(),
       machine: z.string().optional(),
@@ -55,6 +55,15 @@ export const createPayment = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const auth = await requireKioskOrAdmin();
+    if (auth.kind === "machine") {
+      if (!data.machine) throw new Error("Thiếu tên máy");
+      const machine = await prisma.machine.findUnique({
+        where: { id: auth.machineId },
+        select: { name: true },
+      });
+      if (!machine || machine.name !== data.machine) throw new Error("Unauthorized");
+    }
     let invoiceId = data.invoiceId;
     if (!invoiceId && data.amount > 0) {
       const time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
@@ -75,7 +84,7 @@ export const createPayment = createServerFn({ method: "POST" })
         invoiceId,
         amount: data.amount,
         method: data.method,
-        status: data.method === "cash" ? "pending" : "pending",
+        status: "pending",
         transferNote: data.transferNote,
       },
     });
@@ -115,74 +124,83 @@ export const confirmPayment = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       paymentId: z.string(),
-      receivedAmount: z.number().int(),
+      receivedAmount: z.number().int().min(0),
     }),
   )
   .handler(async ({ data }) => {
-    const payment = await prisma.payment.findUnique({ where: { id: data.paymentId } });
-    if (!payment) throw new Error("Payment not found");
+    await requireAdmin();
 
-    const diff = data.receivedAmount - payment.amount;
-    let status = "success";
-    if (diff < 0) status = "partial";
-    else if (diff > 0) status = "overpaid";
+    const result = await prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findUnique({ where: { id: data.paymentId } });
+      if (!payment) throw new Error("Payment not found");
+      if (payment.status !== "pending") throw new Error("Thanh toán đã được xử lý trước đó");
 
-    const updated = await prisma.payment.update({
-      where: { id: data.paymentId },
-      data: {
-        status,
-        paidAt: new Date(),
-        reference: `THANHTOAN ${data.receivedAmount}`,
-      },
-    });
+      const diff = data.receivedAmount - payment.amount;
+      let status = "success";
+      if (diff < 0) status = "partial";
+      else if (diff > 0) status = "overpaid";
 
-    let releasedMachine: string | null = null;
-
-    if (payment.invoiceId) {
-      const invoice = await prisma.invoice.findUnique({
-        where: { id: payment.invoiceId },
-        select: { machine: true },
+      const updated = await tx.payment.update({
+        where: { id: data.paymentId },
+        data: {
+          status,
+          paidAt: new Date(),
+          reference: `THANHTOAN ${data.receivedAmount}`,
+        },
       });
 
-      await prisma.invoice.update({
-        where: { id: payment.invoiceId },
-        data: { status: "Đã thanh toán" },
-      });
+      let releasedMachine: string | null = null;
+      let releasedMachineId: string | null = null;
 
-      if (invoice?.machine) {
-        const machine = await prisma.machine.findFirst({
-          where: { name: invoice.machine, status: "in_use" },
+      if (payment.invoiceId) {
+        const invoice = await tx.invoice.findUnique({
+          where: { id: payment.invoiceId },
+          select: { machine: true },
         });
-        if (machine) {
-          await prisma.machine.update({
-            where: { id: machine.id },
-            data: { status: "idle", remaining: null, startedAt: null, customer: null },
+
+        await tx.invoice.update({
+          where: { id: payment.invoiceId },
+          data: { status: "Đã thanh toán" },
+        });
+
+        if (invoice?.machine) {
+          const machine = await tx.machine.findFirst({
+            where: { name: invoice.machine, status: "in_use" },
           });
-          releasedMachine = machine.name;
-          broadcast("machine:updated", { id: machine.id });
+          if (machine) {
+            await tx.machine.update({
+              where: { id: machine.id },
+              data: { status: "idle", remaining: null, startedAt: null, customer: null },
+            });
+            releasedMachine = machine.name;
+            releasedMachineId = machine.id;
+          }
         }
       }
-    }
 
-    await prisma.transaction.create({
-      data: {
-        type: `payment_${status}`,
-        amount: data.receivedAmount,
-        referenceId: payment.id,
-        description: `Confirmed: ${data.receivedAmount} (expected: ${payment.amount}, diff: ${diff})`,
-      },
+      await tx.transaction.create({
+        data: {
+          type: `payment_${status}`,
+          amount: data.receivedAmount,
+          referenceId: payment.id,
+          description: `Confirmed: ${data.receivedAmount} (expected: ${payment.amount}, diff: ${diff})`,
+        },
+      });
+
+      return { updated, releasedMachine, releasedMachineId };
     });
 
+    if (result.releasedMachineId) broadcast("machine:updated", { id: result.releasedMachineId });
     broadcast("payment.success", {
-      id: updated.id,
-      status,
+      id: result.updated.id,
+      status: result.updated.status,
       receivedAmount: data.receivedAmount,
-      expectedAmount: payment.amount,
-      diff,
-      releasedMachine,
+      expectedAmount: result.updated.amount,
+      diff: data.receivedAmount - result.updated.amount,
+      releasedMachine: result.releasedMachine,
     });
 
-    return { ...updated, releasedMachine };
+    return { ...result.updated, releasedMachine: result.releasedMachine };
   });
 
 export const refundPayment = createServerFn({ method: "POST" })
@@ -196,46 +214,54 @@ export const refundPayment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     await requireAdmin();
-    const payment = await prisma.payment.findUnique({ where: { id: data.paymentId } });
-    if (!payment) throw new Error("Payment not found");
+    const result = await prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findUnique({ where: { id: data.paymentId } });
+      if (!payment) throw new Error("Payment not found");
+      if (payment.status === "refunded") throw new Error("Đã hoàn tiền trước đó");
+      if (payment.status === "pending") throw new Error("Thanh toán chưa được xác nhận");
+      if (data.amount > payment.amount) throw new Error("Số tiền hoàn vượt quá số đã thu");
 
-    const refund = await prisma.refund.create({
-      data: {
-        paymentId: data.paymentId,
-        invoiceId: payment.invoiceId ?? "",
-        amount: data.amount,
-        reason: data.reason,
-        processedBy: data.processedBy,
-      },
-    });
-
-    if (payment.invoiceId) {
-      await prisma.invoice.update({
-        where: { id: payment.invoiceId },
-        data: { refundedAt: new Date(), refundReason: data.reason },
+      const refund = await tx.refund.create({
+        data: {
+          paymentId: data.paymentId,
+          invoiceId: payment.invoiceId ?? "",
+          amount: data.amount,
+          reason: data.reason,
+          processedBy: data.processedBy,
+        },
       });
-    }
 
-    await prisma.payment.update({
-      where: { id: data.paymentId },
-      data: { status: "refunded" },
+      if (payment.invoiceId) {
+        await tx.invoice.update({
+          where: { id: payment.invoiceId },
+          data: { refundedAt: new Date(), refundReason: data.reason },
+        });
+      }
+
+      await tx.payment.update({
+        where: { id: data.paymentId },
+        data: { status: "refunded" },
+      });
+
+      await tx.transaction.create({
+        data: {
+          type: "refund",
+          amount: -data.amount,
+          referenceId: refund.id,
+          description: `Refund: ${data.amount} - ${data.reason}`,
+        },
+      });
+
+      return refund;
     });
 
-    await prisma.transaction.create({
-      data: {
-        type: "refund",
-        amount: -data.amount,
-        referenceId: refund.id,
-        description: `Refund: ${data.amount} - ${data.reason}`,
-      },
-    });
+    broadcast("payment.refund", { id: result.id, amount: data.amount, reason: data.reason });
 
-    broadcast("payment.refund", { id: refund.id, amount: data.amount, reason: data.reason });
-
-    return refund;
+    return result;
   });
 
 export const listPayments = createServerFn({ method: "GET" }).handler(async () => {
+  await requireAdmin();
   const payments = await prisma.payment.findMany({
     include: { invoice: true, refunds: true },
     orderBy: { createdAt: "desc" },
@@ -246,6 +272,7 @@ export const listPayments = createServerFn({ method: "GET" }).handler(async () =
 export const listTransactions = createServerFn({ method: "GET" })
   .inputValidator(z.object({ limit: z.number().int().default(50) }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     return prisma.transaction.findMany({
       orderBy: { createdAt: "desc" },
       take: data.limit,
@@ -263,6 +290,8 @@ export const createNotification = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    const auth = await requireKioskOrAdmin();
+    if (auth.kind === "machine" && data.type !== "COMBO_ORDER") throw new Error("Unauthorized");
     const notif = await prisma.notification.create({ data });
     broadcast("notification.created", {
       id: notif.id,
@@ -276,6 +305,7 @@ export const createNotification = createServerFn({ method: "POST" })
 export const listNotifications = createServerFn({ method: "GET" })
   .inputValidator(z.object({ limit: z.number().int().default(50) }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     return prisma.notification.findMany({
       orderBy: { createdAt: "desc" },
       take: data.limit,
@@ -285,12 +315,14 @@ export const listNotifications = createServerFn({ method: "GET" })
 export const markNotificationRead = createServerFn({ method: "POST" })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     return prisma.notification.update({ where: { id: data.id }, data: { read: true } });
   });
 
 export const getInvoicePayments = createServerFn({ method: "GET" })
   .inputValidator(z.object({ invoiceId: z.string() }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     return prisma.payment.findMany({
       where: { invoiceId: data.invoiceId },
       include: { refunds: true },
@@ -322,6 +354,7 @@ export const generateQRCode = createServerFn({ method: "GET" })
 export const lookupBankAccount = createServerFn({ method: "POST" })
   .inputValidator(z.object({ bin: z.string(), accountNumber: z.string() }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     const { bin, accountNumber } = data;
 
     const map = await getDecryptedSettings();
@@ -354,6 +387,7 @@ export const lookupBankAccount = createServerFn({ method: "POST" })
 export const claimInvoice = createServerFn({ method: "POST" })
   .inputValidator(z.object({ invoiceId: z.string(), staffName: z.string() }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     const existing = await prisma.invoice.findUnique({ where: { id: data.invoiceId } });
     if (!existing) return { ok: false, error: "not_found" as const };
     if (existing.assignedTo)
@@ -385,6 +419,7 @@ export const claimInvoice = createServerFn({ method: "POST" })
   });
 
 export const listStaffRequests = createServerFn({ method: "GET" }).handler(async () => {
+  await requireAdmin();
   return prisma.invoice.findMany({
     where: { method: "cash", status: { in: ["Chờ", "Đang xử lý"] } },
     orderBy: { createdAt: "desc" },
@@ -395,5 +430,6 @@ export const listStaffRequests = createServerFn({ method: "GET" }).handler(async
 export const getStaffRequestById = createServerFn({ method: "GET" })
   .inputValidator(z.object({ invoiceId: z.string() }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     return prisma.invoice.findUnique({ where: { id: data.invoiceId } });
   });

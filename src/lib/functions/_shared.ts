@@ -29,6 +29,8 @@ export function getClientIP(): string {
   try {
     const req = getRequest();
     if (!req) return "unknown";
+    const cf = req.headers.get("cf-connecting-ip");
+    if (cf) return cf;
     const forwarded = req.headers.get("x-forwarded-for");
     if (forwarded) return forwarded.split(",")[0]!.trim();
     const realIP = req.headers.get("x-real-ip");
@@ -39,8 +41,21 @@ export function getClientIP(): string {
   }
 }
 
+function isPrivateIP(ip: string): boolean {
+  if (ip === "127.0.0.1" || ip === "::1" || ip === "localhost") return true;
+  const v4 = ip.startsWith("::ffff:") ? ip.slice(7) : ip;
+  const parts = v4.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((n) => Number.isNaN(n))) return false;
+  if (parts[0] === 10) return true;
+  if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+  if (parts[0] === 192 && parts[1] === 168) return true;
+  if (parts[0] === 169 && parts[1] === 254) return true;
+  return false;
+}
+
 export function isLocalIP(ip: string): boolean {
-  return ip === "127.0.0.1" || ip === "::1" || ip === "localhost" || ip === "unknown";
+  if (ip === "unknown") return true;
+  return isPrivateIP(ip);
 }
 
 export async function deleteImageFile(imagePath: string | null) {

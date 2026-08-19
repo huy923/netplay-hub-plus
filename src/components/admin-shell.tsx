@@ -122,7 +122,6 @@ export function AdminShell() {
 
   const handleLogout = async () => {
     await doLogout();
-    document.cookie = "__session=; path=/; max-age=0";
     navigate({ to: "/" });
   };
 

@@ -1,0 +1,15 @@
+node_modules
+.git
+.env
+.env.*.local
+dist
+.output
+.tanstack
+*.db
+*.db-journal
+/dev.db*
+/dev.db
+nohup.out
+*.log
+.vscode
+.idea

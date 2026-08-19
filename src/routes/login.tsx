@@ -46,8 +46,7 @@ function Login() {
     setError("");
     setLoading(true);
     try {
-      const result = await doLogin({ data: { username, password } });
-      document.cookie = `__session=${result.token}; path=/; max-age=86400; SameSite=Lax`;
+      await doLogin({ data: { username, password } });
       nav({ to: "/admin" });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("login.errorFailed"));

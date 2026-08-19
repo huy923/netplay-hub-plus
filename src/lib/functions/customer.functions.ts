@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma.server";
-import { encrypt } from "@/lib/encryption";
+import { hashPassword } from "@/lib/encryption";
 import { broadcast } from "@/lib/sse-events.server";
 import { requireAdmin } from "@/lib/auth.server";
 
@@ -30,7 +30,7 @@ export const createCustomer = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const result = await prisma.customer.create({
-      data: { ...data, password: data.password ? encrypt(data.password) : "" },
+      data: { ...data, password: data.password ? await hashPassword(data.password) : "" },
     });
     broadcast("customer:created", { id: result.id });
     return result;
@@ -69,11 +69,12 @@ export const earnLoyaltyPoints = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       customerId: z.string(),
-      points: z.number().int(),
+      points: z.number().int().min(1),
       reference: z.string().optional(),
     }),
   )
   .handler(async ({ data }) => {
+    await requireAdmin();
     await prisma.loyaltyTransaction.create({
       data: {
         customerId: data.customerId,
@@ -92,11 +93,12 @@ export const burnLoyaltyPoints = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       customerId: z.string(),
-      points: z.number().int(),
+      points: z.number().int().min(1),
       reference: z.string().optional(),
     }),
   )
   .handler(async ({ data }) => {
+    await requireAdmin();
     const customer = await prisma.customer.findUnique({ where: { id: data.customerId } });
     if (!customer || customer.points < data.points) throw new Error("Không đủ điểm thưởng");
     await prisma.loyaltyTransaction.create({

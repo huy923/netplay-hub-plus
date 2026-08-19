@@ -4,4 +4,12 @@
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
+  // NOTE (2026-08-19, Phase 3 audit): this is a stub. Cloudflare deploy is NOT
+  // ready. Before `wrangler deploy`:
+  //   1. Point main at the built worker: dist/server/index.js (vite build outputs it).
+  //   2. Add a D1 binding + switch Prisma to @prisma/adapter-d1 (schema provider
+  //      is postgresql/sqlite; D1 needs the adapter at runtime).
+  //   3. Add assets binding for dist/client (SSR worker doesn't serve static files).
+  //   4. ENCRYPTION_KEY + SUPABASE_* must exist as Worker secrets.
+  // Until then, Docker (`docker compose up -d --build`) is the supported path.
 }

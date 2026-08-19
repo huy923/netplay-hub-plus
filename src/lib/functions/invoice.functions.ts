@@ -14,6 +14,7 @@ export const listInvoices = createServerFn({ method: "GET" }).handler(async () =
 });
 
 export const getAllPendingFoodOrders = createServerFn({ method: "GET" }).handler(async () => {
+  await requireAdmin();
   return prisma.invoice.findMany({
     where: {
       status: { in: ["Chờ", "Chờ xử lý", "Đang chuẩn bị"] },
@@ -27,6 +28,7 @@ export const getAllPendingFoodOrders = createServerFn({ method: "GET" }).handler
 export const getInvoiceById = createServerFn({ method: "GET" })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     return prisma.invoice.findUnique({
       where: { id: data.id },
       include: { items: true },
@@ -36,6 +38,7 @@ export const getInvoiceById = createServerFn({ method: "GET" })
 export const getInvoicesByCustomer = createServerFn({ method: "GET" })
   .inputValidator(z.object({ customer: z.string() }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     return prisma.invoice.findMany({
       where: { customer: data.customer },
       orderBy: { createdAt: "desc" },
@@ -46,12 +49,14 @@ export const getInvoicesByCustomer = createServerFn({ method: "GET" })
 export const getMachineByCustomerName = createServerFn({ method: "GET" })
   .inputValidator(z.object({ name: z.string() }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     return prisma.machine.findFirst({ where: { customer: data.name } });
   });
 
 export const getCustomerById = createServerFn({ method: "GET" })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     const customer = await prisma.customer.findUnique({ where: { id: data.id } });
     if (!customer) return null;
     const { password, ...rest } = customer;
@@ -63,15 +68,15 @@ export const createInvoice = createServerFn({ method: "POST" })
     z.object({
       machine: z.string(),
       customer: z.string(),
-      amount: z.number().int(),
+      amount: z.number().int().optional(),
       method: z.string(),
       status: z.string().default("Đã thanh toán"),
       items: z
         .array(
           z.object({
             name: z.string(),
-            price: z.number().int(),
-            qty: z.number().int(),
+            price: z.number().int().optional(),
+            qty: z.number().int().min(1),
             type: z.string().default("menu"),
           }),
         )
@@ -81,8 +86,36 @@ export const createInvoice = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    await requireAdmin();
     const time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-    let finalAmount = data.amount;
+
+    // Server-side price resolution — never trust client prices
+    const resolvedItems: { name: string; price: number; qty: number; type: string }[] = [];
+    let subtotal = 0;
+    for (const item of data.items ?? []) {
+      if (item.type === "menu") {
+        const menu = await prisma.menuItem.findUnique({ where: { name: item.name } });
+        if (!menu) throw new Error(`Món "${item.name}" không tồn tại`);
+        resolvedItems.push({ name: menu.name, price: menu.price, qty: item.qty, type: "menu" });
+        subtotal += menu.price * item.qty;
+      } else if (item.type === "combo") {
+        const combo = await prisma.combo.findFirst({ where: { name: item.name } });
+        if (!combo) throw new Error(`Combo "${item.name}" không tồn tại`);
+        resolvedItems.push({ name: combo.name, price: combo.price, qty: item.qty, type: "combo" });
+        subtotal += combo.price * item.qty;
+      } else if (item.type === "time") {
+        const machine = await prisma.machine.findFirst({ where: { name: data.machine } });
+        if (!machine) throw new Error("Máy không tồn tại");
+        const price = machine.pricePerHour * item.qty;
+        resolvedItems.push({ name: item.name, price, qty: item.qty, type: "time" });
+        subtotal += price;
+      } else {
+        throw new Error("Loại món không hợp lệ");
+      }
+    }
+
+    const baseAmount = data.items && data.items.length > 0 ? subtotal : (data.amount ?? 0);
+    let finalAmount = baseAmount;
     let discountAmount = 0;
     let discountId: string | undefined;
 
@@ -94,12 +127,12 @@ export const createInvoice = createServerFn({ method: "POST" })
         (!discount.expiresAt || discount.expiresAt > new Date()) &&
         (discount.maxUses === 0 || discount.usedCount < discount.maxUses)
       ) {
-        if (data.amount >= discount.minAmount) {
+        if (baseAmount >= discount.minAmount) {
           discountAmount =
             discount.type === "percent"
-              ? Math.round((data.amount * discount.value) / 100)
+              ? Math.round((baseAmount * discount.value) / 100)
               : discount.value;
-          finalAmount = Math.max(0, data.amount - discountAmount);
+          finalAmount = Math.max(0, baseAmount - discountAmount);
           discountId = discount.id;
           await prisma.discount.update({
             where: { id: discount.id },
@@ -119,7 +152,7 @@ export const createInvoice = createServerFn({ method: "POST" })
         time,
         discountAmount,
         discountId,
-        items: data.items ? { create: data.items } : undefined,
+        items: resolvedItems.length > 0 ? { create: resolvedItems } : undefined,
       },
       include: { items: true },
     });
@@ -173,6 +206,7 @@ export const createInvoice = createServerFn({ method: "POST" })
 export const getUnpaidInvoicesByMachine = createServerFn({ method: "GET" })
   .inputValidator(z.object({ machine: z.string() }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     return prisma.invoice.findMany({
       where: {
         machine: data.machine,
@@ -186,6 +220,7 @@ export const getUnpaidInvoicesByMachine = createServerFn({ method: "GET" })
 export const getCurrentSessionOrders = createServerFn({ method: "GET" })
   .inputValidator(z.object({ machine: z.string(), startedAt: z.string() }))
   .handler(async ({ data }) => {
+    await requireAdmin();
     return prisma.invoice.findMany({
       where: {
         machine: data.machine,
@@ -205,42 +240,51 @@ export const settleInvoices = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const invoices = await prisma.invoice.findMany({
-      where: { id: { in: data.invoiceIds } },
-      include: { items: true },
+    await requireAdmin();
+
+    const result = await prisma.$transaction(async (tx) => {
+      const invoices = await tx.invoice.findMany({
+        where: { id: { in: data.invoiceIds } },
+        include: { items: true },
+      });
+      if (invoices.length === 0) throw new Error("No invoices found");
+
+      const totalAmount = invoices.reduce((s, i) => s + i.amount, 0);
+      const time = new Date().toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      for (const inv of invoices) {
+        await tx.payment.create({
+          data: {
+            invoiceId: inv.id,
+            amount: inv.amount,
+            method: data.method,
+            status: "success",
+            paidAt: new Date(),
+          },
+        });
+
+        await tx.invoice.update({
+          where: { id: inv.id },
+          data: { status: "Đã thanh toán", method: data.method },
+        });
+
+        await tx.transaction.create({
+          data: {
+            type: "payment_success",
+            amount: inv.amount,
+            referenceId: inv.id,
+            description: `Settled: ${inv.machine} - ${inv.customer} (${inv.amount})`,
+          },
+        });
+      }
+
+      return { total: totalAmount, count: invoices.length };
     });
-    if (invoices.length === 0) throw new Error("No invoices found");
 
-    const totalAmount = invoices.reduce((s, i) => s + i.amount, 0);
-    const time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    broadcast("payment.success", { ids: data.invoiceIds, total: result.total });
 
-    for (const inv of invoices) {
-      await prisma.payment.create({
-        data: {
-          invoiceId: inv.id,
-          amount: inv.amount,
-          method: data.method,
-          status: "success",
-          paidAt: new Date(),
-        },
-      });
-
-      await prisma.invoice.update({
-        where: { id: inv.id },
-        data: { status: "Đã thanh toán", method: data.method },
-      });
-
-      await prisma.transaction.create({
-        data: {
-          type: "payment_success",
-          amount: inv.amount,
-          referenceId: inv.id,
-          description: `Settled: ${inv.machine} - ${inv.customer} (${inv.amount})`,
-        },
-      });
-    }
-
-    broadcast("payment.success", { ids: data.invoiceIds, total: totalAmount });
-
-    return { ok: true, total: totalAmount, count: invoices.length };
+    return { ok: true, ...result };
   });

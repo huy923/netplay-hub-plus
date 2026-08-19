@@ -18,6 +18,7 @@ import {
   getOrdersByMachine,
   updateOrderStatus,
   getCustomerByName,
+  issueKioskToken,
 } from "@/lib/cybernet.functions";
 import {
   Clock,
@@ -66,6 +67,7 @@ function PlayerHome() {
   const makeNotificationFn = useServerFn(createNotification);
   const updateOrderStatusFn = useServerFn(updateOrderStatus);
   const updateMachineFn = useServerFn(updateMachine);
+  const issueKioskTokenFn = useServerFn(issueKioskToken);
 
   const {
     data: machine,
@@ -135,7 +137,8 @@ function PlayerHome() {
   }, [machine?.customer]);
 
   const isVIP = custObj?.tier === "VIP";
-  const vipDiscount = isVIP ? Math.round(foodAmount * 0.1) : 0;
+  const vipOf = (base: number) => (isVIP ? Math.round(base * 0.1) : 0);
+  const vipDiscount = vipOf(foodAmount);
 
   const [remaining, setRemaining] = useState(0);
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -154,6 +157,11 @@ function PlayerHome() {
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
+    if (!machine?.id) return;
+    issueKioskTokenFn({ data: { machineId: machine.id } }).catch(() => {});
+  }, [machine?.id]);
+
+  useEffect(() => {
     if (!machine) return;
     if (machine.status === "in_use" && machine.remaining && machine.startedAt) {
       const duration = parseTime(machine.remaining);
@@ -165,7 +173,7 @@ function PlayerHome() {
         const elapsed2 = Math.floor((Date.now() - new Date(machine.startedAt).getTime()) / 1000);
         const played = Math.min(elapsed2, dur);
         const timeCost = Math.round((played / 3600) * machine.pricePerHour);
-        const finalAmount = timeCost + foodAmount - vipDiscount;
+        const finalAmount = timeCost + foodAmount - vipOf(timeCost + foodAmount);
         setSessionAmount(finalAmount);
         sessionSnapshot.current = { amount: finalAmount, food: foodItems, timeCost };
         setSessionEnded(true);
@@ -184,7 +192,7 @@ function PlayerHome() {
           if (machine) {
             const hours = parseTime(machine.remaining ?? "0:00") / 3600;
             const timeCost = Math.round(hours * machine.pricePerHour);
-            const finalAmount = timeCost + foodAmount - vipDiscount;
+            const finalAmount = timeCost + foodAmount - vipOf(timeCost + foodAmount);
             setSessionAmount(finalAmount);
             sessionSnapshot.current = { amount: finalAmount, food: foodItems, timeCost };
             setSessionEnded(true);
@@ -204,7 +212,8 @@ function PlayerHome() {
     const dur = parseTime(machine.remaining);
     const el = Math.floor((Date.now() - new Date(machine.startedAt).getTime()) / 1000);
     const played = Math.min(el, dur);
-    setSessionAmount(Math.round((played / 3600) * machine.pricePerHour) + foodAmount - vipDiscount);
+    const timeCost = Math.round((played / 3600) * machine.pricePerHour);
+    setSessionAmount(timeCost + foodAmount - vipOf(timeCost + foodAmount));
   }, [machine, remaining, foodAmount, vipDiscount]);
 
   const hh = String(Math.floor(remaining / 3600)).padStart(2, "0");
@@ -267,7 +276,7 @@ function PlayerHome() {
     const inv: { id?: string } | undefined = await createOrderFn({
       data: {
         machineName: machine.name,
-        items: [{ name: combo.label, price: combo.price, qty: 1, type: "combo" }],
+        items: [{ name: combo.label, qty: 1, type: "combo" }],
         note: `${combo.items} — kèm gia hạn +${Math.round(combo.seconds / 3600)}h giờ chơi (tự động)`,
       },
     });
@@ -457,7 +466,7 @@ function PlayerHome() {
                 const snapFood = sessionSnapshot.current?.food ?? foodItems;
                 const snapTimeCost = sessionSnapshot.current?.timeCost ?? 0;
                 const snapFoodAmt = snapFood.reduce((sum, [, g]) => sum + g.total, 0);
-                const disc = isVIP ? Math.round(snapFoodAmt * 0.1) : 0;
+                const disc = vipOf(snapTimeCost + snapFoodAmt);
                 const total = sessionSnapshot.current?.amount ?? sessionAmount;
                 return (
                   <>
@@ -492,7 +501,7 @@ function PlayerHome() {
                     )}
                     {disc > 0 && (
                       <div className="flex justify-between text-sm text-green-500">
-                        <span>⭐ VIP giảm 10% đồ ăn</span>
+                        <span>⭐ VIP giảm 10% tổng hóa đơn</span>
                         <span className="font-semibold">-{formatVND(disc)}</span>
                       </div>
                     )}
@@ -1072,7 +1081,7 @@ function FoodTab({
                       size="sm"
                       onClick={() => add(m.id)}
                       disabled={m.stock === 0}
-                        className="bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 text-xs h-8"
+                      className="bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 text-xs h-8"
                     >
                       {m.stock === 0 ? t("common.outOfStock") : t("common.add")}
                     </Button>
@@ -1129,13 +1138,13 @@ function FoodTab({
               </div>
               <div className="flex justify-between border-t border-border mt-4 pt-3">
                 <span className="font-semibold text-foreground/90">{t("common.total")}</span>
-                  <span className="font-display text-xl font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                <span className="font-display text-xl font-bold bg-linear-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
                   {formatVND(total)}
                 </span>
               </div>
               <div className="space-y-2 mt-4">
                 <Button
-                    className="w-full bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0 h-11 shadow-lg shadow-pink-500/20"
+                  className="w-full bg-linear-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0 h-11 shadow-lg shadow-pink-500/20"
                   size="lg"
                   onClick={handleSend}
                 >
@@ -1614,7 +1623,7 @@ function ExtendTab({
                   </Button>
                 )}
                 <Button
-                    className="mt-4 w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0"
+                  className="mt-4 w-full bg-linear-to-r from-purple-500 to-cyan-400 text-white border-0"
                   onClick={() => {
                     setOrdered(null);
                     setCancelDone(false);
@@ -1662,7 +1671,8 @@ function PayTab({
   const duration = parseTime(machine.remaining ?? "0:00");
   const playHours = Math.min(elapsed, duration) / 3600;
   const playCost = Math.round(playHours * machine.pricePerHour);
-  const displayAmount = playCost + foodAmount - vipDiscount;
+  const displayAmount =
+    playCost + foodAmount - (isVIP ? Math.round((playCost + foodAmount) * 0.1) : 0);
 
   return (
     <div className="max-w-md mx-auto space-y-6">
@@ -1710,10 +1720,10 @@ function PayTab({
               </div>
             </>
           )}
-          {isVIP && vipDiscount > 0 && (
+          {isVIP && (isVIP ? Math.round((playCost + foodAmount) * 0.1) : 0) > 0 && (
             <div className="flex justify-between bg-green-500/10 rounded-lg px-3 py-2 text-green-500">
-              <span>⭐ VIP giảm 10% đồ ăn</span>
-              <b>-{formatVND(vipDiscount)}</b>
+              <span>⭐ VIP giảm 10% tổng hóa đơn</span>
+              <b>-{formatVND(Math.round((playCost + foodAmount) * 0.1))}</b>
             </div>
           )}
           {machine.area && (

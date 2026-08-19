@@ -262,16 +262,21 @@ function POS() {
         data: {
           machine: selectedMachine.name,
           customer: t("pos.walkInGuest"),
-          amount: total,
           method,
           status: t("dashboard.statusPaid"),
           discountCode: appliedDiscount ? discountCode.trim() : undefined,
-          items: items.map((i: any) => ({
-            name: i.name,
-            price: i.price,
-            qty: i.qty,
-            type: "menu",
-          })),
+          items: [
+            ...items.map((i: any) => ({
+              name: i.name,
+              qty: i.qty,
+              type: "menu",
+            })),
+            {
+              name: `Giờ chơi ${hours}h — ${selectedMachine.name}`,
+              qty: hours,
+              type: "time",
+            },
+          ],
         },
       });
       await um({
@@ -567,7 +572,9 @@ function POS() {
                   </div>
                   <div>
                     <div className="font-semibold text-foreground">In phiếu bếp</div>
-                    <div className="text-muted-foreground">Đơn → "Đang chuẩn bị", khách không thể hủy</div>
+                    <div className="text-muted-foreground">
+                      Đơn → "Đang chuẩn bị", khách không thể hủy
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -576,7 +583,9 @@ function POS() {
                   </div>
                   <div>
                     <div className="font-semibold text-foreground">Đã giao</div>
-                    <div className="text-muted-foreground">Đồ ăn đã đến khách, hiển thị trên play</div>
+                    <div className="text-muted-foreground">
+                      Đồ ăn đã đến khách, hiển thị trên play
+                    </div>
                   </div>
                 </div>
               </div>
@@ -650,18 +659,20 @@ function POS() {
                             {formatVND(inv.amount)}
                           </span>
                         </div>
-                        {inv.status !== "Đã giao" && inv.status !== "Đã gộp" && inv.status !== "Đã hủy" && (
-                          <div className="mt-2">
-                            <button
-                              onClick={() => printKitchenMutation.mutate(inv)}
-                              disabled={printKitchenMutation.isPending}
-                              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-linear-to-r from-orange-500 to-amber-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all disabled:opacity-50"
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                              {t("pos.printKitchen")}
-                            </button>
-                          </div>
-                        )}
+                        {inv.status !== "Đã giao" &&
+                          inv.status !== "Đã gộp" &&
+                          inv.status !== "Đã hủy" && (
+                            <div className="mt-2">
+                              <button
+                                onClick={() => printKitchenMutation.mutate(inv)}
+                                disabled={printKitchenMutation.isPending}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-linear-to-r from-orange-500 to-amber-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all disabled:opacity-50"
+                              >
+                                <Printer className="h-3.5 w-3.5" />
+                                {t("pos.printKitchen")}
+                              </button>
+                            </div>
+                          )}
                       </div>
                     ))}
 
@@ -704,18 +715,20 @@ function POS() {
                           {formatVND(inv.amount)}
                         </span>
                       </div>
-                      {inv.status !== "Đã giao" && inv.status !== "Đã gộp" && inv.status !== "Đã hủy" && (
-                        <div className="mt-2">
-                          <button
-                            onClick={() => printKitchenMutation.mutate(inv)}
-                            disabled={printKitchenMutation.isPending}
-                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-linear-to-r from-orange-500 to-amber-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all disabled:opacity-50"
-                          >
-                            <Printer className="h-3.5 w-3.5" />
-                            {t("pos.printKitchen")}
-                          </button>
-                        </div>
-                      )}
+                      {inv.status !== "Đã giao" &&
+                        inv.status !== "Đã gộp" &&
+                        inv.status !== "Đã hủy" && (
+                          <div className="mt-2">
+                            <button
+                              onClick={() => printKitchenMutation.mutate(inv)}
+                              disabled={printKitchenMutation.isPending}
+                              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-linear-to-r from-orange-500 to-amber-400 text-white text-xs font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all disabled:opacity-50"
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                              {t("pos.printKitchen")}
+                            </button>
+                          </div>
+                        )}
                     </div>
                   ))}
                 </div>
@@ -1133,7 +1146,7 @@ function POS() {
               ) : (
                 <Button
                   disabled={createFoodOrderMutation.isPending || items.length === 0}
-                    className="w-full bg-linear-to-r from-orange-500 to-amber-400 text-white border-0 shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all"
+                  className="w-full bg-linear-to-r from-orange-500 to-amber-400 text-white border-0 shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all"
                   size="lg"
                   onClick={() => createFoodOrderMutation.mutate()}
                 >

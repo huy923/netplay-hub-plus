@@ -1,9 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma.server";
-import { decrypt } from "@/lib/encryption";
+import { decrypt, hashPassword, verifyPassword } from "@/lib/encryption";
 import { broadcast } from "@/lib/sse-events.server";
-import { signToken, verifyToken, getTokenFromCookie } from "@/lib/auth.server";
+import {
+  signToken,
+  signMachineToken,
+  setSessionCookie,
+  clearSessionCookie,
+  setMachineCookie,
+  getTokenFromCookie,
+  verifyToken,
+} from "@/lib/auth.server";
 import { getClientIP, isLocalIP } from "./_shared";
 
 export const loginUser = createServerFn({ method: "POST" })
@@ -26,11 +34,35 @@ export const loginUser = createServerFn({ method: "POST" })
       await prisma.loginAttempt.create({ data: { ip, username: data.username, success: false } });
       throw new Error("Tài khoản Admin chỉ có thể đăng nhập từ localhost");
     }
-    const decrypted = decrypt(user.password);
-    if (decrypted !== data.password) {
+
+    let ok = false;
+    let legacy = false;
+    if (user.password.includes(":")) {
+      ok = await verifyPassword(data.password, user.password);
+      if (!ok) {
+        try {
+          ok = decrypt(user.password) === data.password;
+          if (ok) legacy = true;
+        } catch {
+          ok = false;
+        }
+      }
+    } else {
+      ok = decrypt(user.password) === data.password;
+      legacy = ok;
+    }
+    if (!ok) {
       await prisma.loginAttempt.create({ data: { ip, username: data.username, success: false } });
       throw new Error("Sai tài khoản hoặc mật khẩu");
     }
+    // Legacy AES-encrypted password: upgrade to PBKDF2 hash on successful login
+    if (legacy) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { password: await hashPassword(data.password) },
+      });
+    }
+
     await prisma.loginAttempt.create({ data: { ip, username: data.username, success: true } });
     const token = await signToken({
       type: "admin",
@@ -38,7 +70,8 @@ export const loginUser = createServerFn({ method: "POST" })
       username: user.username,
       role: user.role,
     });
-    return { token, user: { id: user.id, username: user.username, role: user.role } };
+    await setSessionCookie(token);
+    return { user: { id: user.id, username: user.username, role: user.role } };
   });
 
 export const getCurrentUser = createServerFn({ method: "GET" }).handler(async () => {
@@ -54,6 +87,20 @@ export const getCurrentUser = createServerFn({ method: "GET" }).handler(async ()
 });
 
 export const logoutUser = createServerFn({ method: "POST" }).handler(async () => {
+  await clearSessionCookie();
   broadcast("user:logout");
   return { ok: true };
 });
+
+export const issueKioskToken = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ machineId: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    const machine = await prisma.machine.findUnique({
+      where: { id: data.machineId },
+      select: { id: true },
+    });
+    if (!machine) throw new Error("Máy không tồn tại");
+    const token = await signMachineToken(data.machineId);
+    await setMachineCookie(token);
+    return { ok: true };
+  });
