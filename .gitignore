@@ -42,3 +42,4 @@ dist-ssr
 .aionrs
 .env
 prisma/dev.db
+.github
