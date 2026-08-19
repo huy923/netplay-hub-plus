@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatVND } from "@/lib/format";
+import { toast } from "sonner";
 import {
   getMachineByIP,
   listMenu,
@@ -94,13 +95,23 @@ function PlayerHome() {
   });
 
   const pendingFoodOrders = (allOrders as any[]).filter(
-    (o: any) => o.status === "Chờ xử lý" || o.status === "Đang chuẩn bị" || o.status === "Đã giao",
+    (o: any) =>
+      o.status === "Chờ" ||
+      o.status === "Chờ xử lý" ||
+      o.status === "Đang chuẩn bị" ||
+      o.status === "Đã giao",
   );
-  const foodAmount = pendingFoodOrders.reduce((sum: number, o: any) => sum + o.amount, 0);
+  const foodAmount = pendingFoodOrders.reduce((sum: number, o: any) => {
+    const foodOnly = (o.items || [])
+      .filter((i: any) => i.type !== "time")
+      .reduce((s: number, i: any) => s + i.price * i.qty, 0);
+    return sum + foodOnly;
+  }, 0);
 
   const groupedFood: Record<string, { qty: number; total: number }> = {};
   for (const order of pendingFoodOrders) {
     for (const item of order.items || []) {
+      if (item.type === "time") continue;
       if (!groupedFood[item.name]) groupedFood[item.name] = { qty: 0, total: 0 };
       groupedFood[item.name].qty += item.qty;
       groupedFood[item.name].total += item.price * item.qty;
@@ -169,10 +180,9 @@ function PlayerHome() {
       const rem = Math.max(0, duration - elapsed);
       setRemaining(rem);
       if (rem <= 0) {
-        const dur = parseTime(machine.remaining);
         const elapsed2 = Math.floor((Date.now() - new Date(machine.startedAt).getTime()) / 1000);
-        const played = Math.min(elapsed2, dur);
-        const timeCost = Math.round((played / 3600) * machine.pricePerHour);
+        const billedHours = Math.ceil(Math.max(0, elapsed2) / 3600);
+        const timeCost = billedHours * machine.pricePerHour;
         const finalAmount = timeCost + foodAmount - vipOf(timeCost + foodAmount);
         setSessionAmount(finalAmount);
         sessionSnapshot.current = { amount: finalAmount, food: foodItems, timeCost };
@@ -189,9 +199,10 @@ function PlayerHome() {
       setRemaining((r) => {
         if (r <= 1) {
           if (intervalRef.current) clearInterval(intervalRef.current);
-          if (machine) {
-            const hours = parseTime(machine.remaining ?? "0:00") / 3600;
-            const timeCost = Math.round(hours * machine.pricePerHour);
+          if (machine && machine.startedAt) {
+            const elapsed = Math.floor((Date.now() - new Date(machine.startedAt).getTime()) / 1000);
+            const billedHours = Math.ceil(Math.max(0, elapsed) / 3600);
+            const timeCost = billedHours * machine.pricePerHour;
             const finalAmount = timeCost + foodAmount - vipOf(timeCost + foodAmount);
             setSessionAmount(finalAmount);
             sessionSnapshot.current = { amount: finalAmount, food: foodItems, timeCost };
@@ -208,11 +219,10 @@ function PlayerHome() {
   }, [machine, remaining > 0, foodAmount]);
 
   useEffect(() => {
-    if (!machine || machine.status !== "in_use" || !machine.remaining || !machine.startedAt) return;
-    const dur = parseTime(machine.remaining);
+    if (!machine || machine.status !== "in_use" || !machine.startedAt) return;
     const el = Math.floor((Date.now() - new Date(machine.startedAt).getTime()) / 1000);
-    const played = Math.min(el, dur);
-    const timeCost = Math.round((played / 3600) * machine.pricePerHour);
+    const billedHours = Math.ceil(Math.max(0, el) / 3600);
+    const timeCost = billedHours * machine.pricePerHour;
     setSessionAmount(timeCost + foodAmount - vipOf(timeCost + foodAmount));
   }, [machine, remaining, foodAmount, vipDiscount]);
 
@@ -308,8 +318,9 @@ function PlayerHome() {
     if (!machine) return;
     try {
       await updateOrderStatusFn({ data: { id, status: "Đã hủy" } });
-    } catch {
-      // continue
+    } catch (e: any) {
+      toast.error(e?.message ?? t("common.error"));
+      return;
     }
     if (seconds > 0) {
       const newRem = Math.max(0, remaining - seconds);
@@ -960,8 +971,23 @@ function FoodTab({
   });
 
   const pendingOrders = activeOrders.filter(
-    (o: any) => o.status === "Chờ xử lý" || o.status === "Đang chuẩn bị" || o.status === "Đã giao",
+    (o: any) =>
+      o.status === "Chờ" ||
+      o.status === "Chờ xử lý" ||
+      o.status === "Đang chuẩn bị" ||
+      o.status === "Đã giao",
   );
+
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const iv = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const cancelLeft = (order: any) => {
+    if (!order.createdAt) return 0;
+    return Math.max(0, Math.ceil(30 - (now - new Date(order.createdAt).getTime()) / 1000));
+  };
 
   const items = menu.filter((m) => cart[m.id]).map((m) => ({ ...m, qty: cart[m.id] }));
   const total = items.reduce((s, i) => s + i.price * i.qty, 0);
@@ -1004,13 +1030,15 @@ function FoodTab({
     if (!window.confirm(t("play.cancelConfirm"))) return;
     try {
       await cancelOrderFn({ data: { id: orderId, status: "Đã hủy" } });
+      toast.success(t("play.orderCancelled"));
       refetchOrders();
-    } catch {
-      // error handled by toast
+    } catch (e: any) {
+      toast.error(e?.message ?? t("common.error"));
     }
   };
 
   const statusColor = (s: string) => {
+    if (s === "Chờ") return "text-amber-400 bg-amber-500/10 border-amber-500/20";
     if (s === "Chờ xử lý") return "text-yellow-400 bg-yellow-500/10 border-yellow-500/20";
     if (s === "Đang chuẩn bị") return "text-blue-400 bg-blue-500/10 border-blue-500/20";
     if (s === "Đã giao") return "text-green-400 bg-green-500/10 border-green-500/20";
@@ -1212,11 +1240,13 @@ function FoodTab({
                     <span
                       className={`text-xs font-medium px-2 py-0.5 rounded-full border ${statusColor(order.status)}`}
                     >
-                      {order.status === "Chờ xử lý"
-                        ? t("play.waiting")
-                        : order.status === "Đang chuẩn bị"
-                          ? t("play.preparing")
-                          : order.status}
+                      {order.status === "Chờ"
+                        ? "Chờ thanh toán"
+                        : order.status === "Chờ xử lý"
+                          ? t("play.waiting")
+                          : order.status === "Đang chuẩn bị"
+                            ? t("play.preparing")
+                            : order.status}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {t("play.orderTime")} {order.time}
@@ -1238,7 +1268,7 @@ function FoodTab({
                     <span className="font-display font-bold text-foreground">
                       {formatVND(order.amount)}
                     </span>
-                    {order.status === "Chờ xử lý" && (
+                    {order.status === "Chờ xử lý" && cancelLeft(order) > 0 && (
                       <Button
                         size="sm"
                         variant="destructive"
@@ -1246,7 +1276,7 @@ function FoodTab({
                         className="h-7 text-xs"
                       >
                         <X className="h-3 w-3 mr-1" />
-                        {t("play.cancelOrder")}
+                        {t("play.cancelOrder")} ({cancelLeft(order)}s)
                       </Button>
                     )}
                   </div>
@@ -1668,9 +1698,8 @@ function PayTab({
     machine.status === "in_use" && machine.startedAt
       ? Math.floor((Date.now() - new Date(machine.startedAt).getTime()) / 1000)
       : 0;
-  const duration = parseTime(machine.remaining ?? "0:00");
-  const playHours = Math.min(elapsed, duration) / 3600;
-  const playCost = Math.round(playHours * machine.pricePerHour);
+  const billedHours = Math.ceil(Math.max(0, elapsed) / 3600);
+  const playCost = billedHours * machine.pricePerHour;
   const displayAmount =
     playCost + foodAmount - (isVIP ? Math.round((playCost + foodAmount) * 0.1) : 0);
 

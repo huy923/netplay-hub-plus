@@ -146,11 +146,18 @@ export const endMachineSession = createServerFn({ method: "POST" })
       });
       const isVip = vipCustomer !== null;
 
-      // Prepaid time (time items on invoices already paid at the POS counter)
+      // Prepaid time = time bought at the POS counter AFTER the previous session
+      // ended (i.e. during THIS session). Older paid time items belong to sessions
+      // that were already billed — counting them would zero out the time charge.
+      const lastSession = await tx.machineSession.findFirst({
+        where: { machineId: machine.id },
+        orderBy: { endedAt: "desc" },
+      });
       const paidTimeInvoices = await tx.invoice.findMany({
         where: {
           machine: machine.name,
           status: "Đã thanh toán",
+          createdAt: { gte: lastSession?.endedAt ?? new Date(0) },
           items: { some: { type: "time" } },
         },
         include: { items: true },
@@ -170,6 +177,16 @@ export const endMachineSession = createServerFn({ method: "POST" })
         hour: "2-digit",
         minute: "2-digit",
       });
+
+      // Billing is by full-hour blocks, not real time: a 1h rental is billed 1h
+      // even if the customer leaves after 30 minutes. Play beyond the bought
+      // time is billed as extra blocks (prepaid covers the bought part).
+      const elapsedSec = machine.startedAt
+        ? Math.floor((Date.now() - new Date(machine.startedAt).getTime()) / 1000)
+        : 0;
+      const hoursUsed = Math.ceil(Math.max(0, elapsedSec) / 3600);
+      const rawTimeAmount = hoursUsed * machine.pricePerHour;
+      const timeAmount = Math.max(0, rawTimeAmount - prepaidVnd);
 
       const existing = await tx.invoice.findFirst({
         where: {
@@ -204,8 +221,21 @@ export const endMachineSession = createServerFn({ method: "POST" })
         }
 
         const existingTimeItem = existing.items?.find((i) => i.type === "time");
-        const timeAmount = existingTimeItem?.price ?? 0;
-        const baseAmount = Math.max(0, timeAmount - prepaidVnd) + extraAmount;
+        if (existingTimeItem) {
+          await tx.invoiceItem.update({
+            where: { id: existingTimeItem.id },
+            data: {
+              name: `Giờ chơi (${hoursUsed.toFixed(1)}h × ${machine.pricePerHour})`,
+              price: timeAmount,
+            },
+          });
+        }
+        // Items already merged into this invoice on a previous run are part of it —
+        // only the time item price is refreshed above, so its food must be kept.
+        const existingFoodVnd = (existing.items ?? [])
+          .filter((i) => i.type !== "time")
+          .reduce((s, i) => s + i.price * i.qty, 0);
+        const baseAmount = timeAmount + existingFoodVnd + extraAmount;
         const { finalAmount, discountAmount } = applyDiscount(baseAmount);
 
         const updatedInvoice = await tx.invoice.update({
@@ -263,15 +293,6 @@ export const endMachineSession = createServerFn({ method: "POST" })
           ],
         };
       }
-
-      const rp = (machine.remaining ?? "0:00").split(":").map(Number);
-      const purchasedSec = (rp[0] || 0) * 3600 + (rp[1] || 0) * 60 + (rp[2] || 0);
-      const elapsedSec = machine.startedAt
-        ? Math.floor((Date.now() - new Date(machine.startedAt).getTime()) / 1000)
-        : 0;
-      const hoursUsed = Math.min(elapsedSec, purchasedSec) / 3600;
-      const rawTimeAmount = Math.round(hoursUsed * machine.pricePerHour);
-      const timeAmount = Math.max(0, rawTimeAmount - prepaidVnd);
 
       const pendingOrders = await tx.invoice.findMany({
         where: {

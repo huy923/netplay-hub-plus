@@ -127,26 +127,21 @@ function POS() {
     enabled: mode === "settle" && !!settleMachineId,
   });
 
-  // Calculate time cost for settle machine
+  // Calculate time cost for settle machine (billed in full-hour blocks)
   const settleTimeCost = useMemo(() => {
-    if (
-      !settleMachine ||
-      settleMachine.status !== "in_use" ||
-      !settleMachine.startedAt ||
-      !settleMachine.remaining
-    )
-      return 0;
-    const [h, m] = settleMachine.remaining.split(":").map(Number);
-    const totalSec = h * 3600 + m * 60;
+    if (!settleMachine || settleMachine.status !== "in_use" || !settleMachine.startedAt) return 0;
     const elapsed = (Date.now() - new Date(settleMachine.startedAt).getTime()) / 1000;
-    const usedSec = Math.min(elapsed, totalSec);
-    return Math.round((usedSec / 3600) * settleMachine.pricePerHour);
+    const billedHours = Math.ceil(Math.max(0, elapsed) / 3600);
+    return billedHours * settleMachine.pricePerHour;
   }, [settleMachine, unpaidInvoices]);
 
   const VIP_DISCOUNT_PERCENT = 10;
   const getCustomerFn = useServerFn(getCustomerByName);
-  const unpaidTotal = unpaidInvoices.reduce((s: number, i: any) => s + i.amount, 0);
-  const settleFoodTotal = unpaidTotal;
+  const foodOfInvoice = (inv: any) =>
+    (inv.items || [])
+      .filter((item: any) => item.type !== "time")
+      .reduce((sum: number, item: any) => sum + item.price * item.qty, 0);
+  const settleFoodTotal = unpaidInvoices.reduce((s: number, inv: any) => s + foodOfInvoice(inv), 0);
   const settleSubtotal = settleTimeCost + settleFoodTotal;
   const settleVipDiscount = settleMachine?.customer ? 0 : 0; // Will be computed via settleCustomer
   const [settleCustomer, setSettleCustomer] = useState<any>(null);
@@ -511,7 +506,7 @@ function POS() {
                         </div>
                         <div className="flex justify-between items-center pt-2 border-t border-border">
                           <span className="font-display font-bold text-foreground">
-                            {formatVND(inv.amount)}
+                            {formatVND(foodOfInvoice(inv))}
                           </span>
                           <div className="flex gap-2">
                             {!isPreparing && (
@@ -640,23 +635,25 @@ function POS() {
                           <span className="text-xs text-muted-foreground">{inv.time}</span>
                         </div>
                         <div className="space-y-1 mb-2">
-                          {inv.items.map((item: any, idx: number) => (
-                            <div key={idx} className="flex justify-between text-sm">
-                              <span className="text-foreground">
-                                {item.qty}× {item.name}
-                              </span>
-                              <span className="text-muted-foreground">
-                                {formatVND(item.price * item.qty)}
-                              </span>
-                            </div>
-                          ))}
+                          {inv.items
+                            .filter((item: any) => item.type !== "time")
+                            .map((item: any, idx: number) => (
+                              <div key={idx} className="flex justify-between text-sm">
+                                <span className="text-foreground">
+                                  {item.qty}× {item.name}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {formatVND(item.price * item.qty)}
+                                </span>
+                              </div>
+                            ))}
                         </div>
                         <div className="flex justify-between pt-2 border-t border-border">
                           <span className="text-xs text-muted-foreground">
                             {inv.customer || "Đồ ăn"}
                           </span>
                           <span className="font-display font-bold text-foreground">
-                            {formatVND(inv.amount)}
+                            {formatVND(foodOfInvoice(inv))}
                           </span>
                         </div>
                         {inv.status !== "Đã giao" &&
@@ -698,21 +695,23 @@ function POS() {
                         <span className="text-xs text-muted-foreground">{inv.time}</span>
                       </div>
                       <div className="space-y-1 mb-2">
-                        {inv.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between text-sm">
-                            <span className="text-foreground">
-                              {item.qty}× {item.name}
-                            </span>
-                            <span className="text-muted-foreground">
-                              {formatVND(item.price * item.qty)}
-                            </span>
-                          </div>
-                        ))}
+                        {inv.items
+                          .filter((item: any) => item.type !== "time")
+                          .map((item: any, idx: number) => (
+                            <div key={idx} className="flex justify-between text-sm">
+                              <span className="text-foreground">
+                                {item.qty}× {item.name}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {formatVND(item.price * item.qty)}
+                              </span>
+                            </div>
+                          ))}
                       </div>
                       <div className="flex justify-between pt-2 border-t border-border">
                         <span className="text-xs text-muted-foreground">{inv.customer}</span>
                         <span className="font-display font-bold text-foreground">
-                          {formatVND(inv.amount)}
+                          {formatVND(foodOfInvoice(inv))}
                         </span>
                       </div>
                       {inv.status !== "Đã giao" &&

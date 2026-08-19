@@ -413,7 +413,11 @@ export const claimInvoice = createServerFn({ method: "POST" })
         metadata: data.invoiceId,
       },
     });
-    broadcast("notification.created", { notifType: "INVOICE_CLAIMED" });
+    broadcast("notification.created", {
+      notifType: "INVOICE_CLAIMED",
+      title: `${data.staffName} đang xử lý`,
+      message: `Máy ${existing.machine} — ${formatVND(existing.amount)}`,
+    });
 
     return { ok: true };
   });

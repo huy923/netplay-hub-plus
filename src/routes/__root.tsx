@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "react-i18next";
 import appCss from "../styles.css?url";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import "@/lib/i18n";
 
 function NotFoundComponent() {
@@ -102,6 +103,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <Outlet />
+        <Toaster richColors position="top-right" />
       </ThemeProvider>
     </QueryClientProvider>
   );

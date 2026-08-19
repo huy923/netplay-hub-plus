@@ -141,8 +141,9 @@ function Machines() {
       getUnpaidFn({ data: { machine: m.name } })
         .then((orders: any[]) => {
           const allItems = orders.flatMap((o: any) => o.items || []);
-          const total = orders.reduce((sum: number, o: any) => sum + o.amount, 0);
-          setMachineOrders((prev) => ({ ...prev, [m.name]: { items: allItems, total } }));
+          const foodItems = allItems.filter((i: any) => i.type !== "time");
+          const total = foodItems.reduce((sum: number, i: any) => sum + i.price * i.qty, 0);
+          setMachineOrders((prev) => ({ ...prev, [m.name]: { items: foodItems, total } }));
         })
         .catch(() => {});
     }
@@ -298,10 +299,8 @@ function Machines() {
   }
 
   function getPlayed(m: any): number {
-    if (m.status !== "in_use" || !m.remaining || !m.startedAt) return 0;
-    const duration = parseTime(m.remaining);
-    const elapsed = Math.floor((Date.now() - new Date(m.startedAt).getTime()) / 1000);
-    return Math.min(elapsed, duration);
+    if (m.status !== "in_use" || !m.startedAt) return 0;
+    return Math.floor((Date.now() - new Date(m.startedAt).getTime()) / 1000);
   }
 
   const filtered = machines.filter((m: any) => filter === "all" || m.status === filter);
@@ -631,7 +630,7 @@ function EndSessionDialog({
     : undefined;
   const timeCost = existingTimeItem
     ? existingTimeItem.price
-    : Math.round((getPlayed(machine) / 3600) * machine.pricePerHour);
+    : Math.ceil(Math.max(0, getPlayed(machine)) / 3600) * machine.pricePerHour;
   const foodCost = orders?.foodTotal ?? 0;
   const total = timeCost + foodCost;
   const customerName = customerObj?.name ?? "Khách vãng lai";

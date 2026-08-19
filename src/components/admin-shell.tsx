@@ -154,6 +154,72 @@ export function AdminShell() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const audioReadyRef = useRef(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [showBellHint, setShowBellHint] = useState(false);
+  const beepedRef = useRef(false);
+  const bellDoneRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      bellDoneRef.current = localStorage.getItem("cybernet-bell-done") === "1";
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (audioUnlocked) {
+      setShowBellHint(false);
+      try {
+        localStorage.setItem("cybernet-bell-done", "1");
+      } catch {
+        /* ignore */
+      }
+      if (!beepedRef.current) {
+        beepedRef.current = true;
+        playNotifSound();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioUnlocked]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let alive = true;
+    try {
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      if (ctx.state === "running") {
+        setAudioUnlocked(true);
+      } else {
+        const p = ctx.resume();
+        if (p && typeof p.then === "function") {
+          p.then(() => {
+            if (alive && ctx.state === "running") setAudioUnlocked(true);
+          }).catch(() => {});
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    const t = setTimeout(() => {
+      if (!alive) return;
+      if (!audioUnlocked) {
+        let done = false;
+        try {
+          done = localStorage.getItem("cybernet-bell-done") === "1";
+        } catch {
+          /* ignore */
+        }
+        if (!done) setShowBellHint(true);
+      }
+    }, 1500);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const unlockAudio = useCallback(() => {
     audioReadyRef.current = true;
@@ -177,12 +243,17 @@ export function AdminShell() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    unlockAudio();
     window.addEventListener("pointerdown", unlockAudio);
     window.addEventListener("keydown", unlockAudio);
+    window.addEventListener("mousedown", unlockAudio);
+    window.addEventListener("touchstart", unlockAudio);
+    window.addEventListener("click", unlockAudio);
     return () => {
       window.removeEventListener("pointerdown", unlockAudio);
       window.removeEventListener("keydown", unlockAudio);
+      window.removeEventListener("mousedown", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+      window.removeEventListener("click", unlockAudio);
     };
   }, [unlockAudio]);
 
@@ -300,6 +371,19 @@ export function AdminShell() {
                 duration: 10000,
               });
             }
+          }
+
+          if (data.type === "payment.success") {
+            refetchNotifs();
+            playNotifSound();
+            const amount = data.total ?? data.expectedAmount ?? data.receivedAmount ?? 0;
+            const machine = data.machine ?? data.releasedMachine ?? "";
+            const title = machine
+              ? `✅ Máy ${machine} thanh toán thành công`
+              : "✅ Thanh toán thành công";
+            const desc = `${formatVND(amount)}${data.diff && data.diff !== 0 ? ` (chênh lệch ${formatVND(data.diff)})` : ""}`;
+            showDesktopNotif(title, desc);
+            toast.success(title, { description: desc, duration: 10000 });
           }
         } catch {
           /* ignore */
@@ -560,7 +644,7 @@ export function AdminShell() {
                     : "bg-red-500 animate-pulse"
               }`}
             />
-            {!audioUnlocked && (
+            {!audioUnlocked && !bellDoneRef.current && (
               <button
                 onClick={unlockAudio}
                 title="Bấm để bật chuông thông báo (trình duyệt chặn âm thanh tự động)"
@@ -595,6 +679,15 @@ export function AdminShell() {
             </div>
           </div>
         </header>
+        {showBellHint && !audioUnlocked && (
+          <div className="border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 flex items-center gap-2 text-sm animate-[fadeIn_0.3s_ease-out]">
+            <Volume2 className="h-4 w-4 text-amber-400 shrink-0 animate-pulse" />
+            <span className="text-amber-200">
+              Trình duyệt chặn âm thanh tự động — <b>bấm vào bất kỳ đâu trên trang</b> một lần để
+              bật chuông thông báo (không cần bấm nút riêng).
+            </span>
+          </div>
+        )}
         {notifPerm === "denied" && (
           <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center gap-2 text-sm">
             <Bell className="h-4 w-4 text-amber-400 shrink-0" />
