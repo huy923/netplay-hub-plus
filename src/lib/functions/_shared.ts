@@ -64,7 +64,9 @@ export async function deleteImageFile(imagePath: string | null) {
   const filepath = `public${imagePath}`;
   try {
     await unlink(filepath);
-  } catch {}
+  } catch {
+    // Best-effort cleanup — file may already be gone
+  }
 }
 
 export async function createAuditLog(
@@ -77,5 +79,7 @@ export async function createAuditLog(
   try {
     const ip = getClientIP();
     await prisma.auditLog.create({ data: { userId, username, action, target, details, ip } });
-  } catch {}
+  } catch {
+    // Never let audit logging break the main operation
+  }
 }

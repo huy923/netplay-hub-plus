@@ -218,7 +218,12 @@ function Machines() {
             }
           : undefined;
 
-        const invoiceItems = (result.items ?? []) as { name: string; price: number; qty: number; type: string }[];
+        const invoiceItems = (result.items ?? []) as {
+          name: string;
+          price: number;
+          qty: number;
+          type: string;
+        }[];
 
         const customerName = m?.customer ?? "Khách vãng lai";
         const invoiceData = {
@@ -602,9 +607,7 @@ function EndSessionDialog({
 
   const hasSessionEndInvoice = useMemo(() => {
     if (!liveOrders) return false;
-    return liveOrders.some((o: any) =>
-      (o.items || []).some((item: any) => item.type === "time"),
-    );
+    return liveOrders.some((o: any) => (o.items || []).some((item: any) => item.type === "time"));
   }, [liveOrders]);
 
   const orders = useMemo(() => {
@@ -618,7 +621,11 @@ function EndSessionDialog({
   const customerObj = useMemo(() => {
     if (!machine?.customer) return null;
     if (typeof machine.customer === "string") {
-      try { return JSON.parse(machine.customer); } catch { return { name: machine.customer }; }
+      try {
+        return JSON.parse(machine.customer);
+      } catch {
+        return { name: machine.customer };
+      }
     }
     return machine.customer;
   }, [machine?.customer]);
@@ -644,16 +651,16 @@ function EndSessionDialog({
       <Dialog open={!!machine && !printReady} onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="border-border bg-background text-foreground max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-foreground">
-              Kết thúc — {machine.name}
-            </DialogTitle>
+            <DialogTitle className="text-foreground">Kết thúc — {machine.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="p-3 rounded-xl bg-muted border border-border space-y-2">
               {hasSessionEndInvoice ? (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Hóa đơn chờ thanh toán</span>
-                  <span className="font-semibold text-foreground">{formatVND(timeCost + foodCost)}</span>
+                  <span className="font-semibold text-foreground">
+                    {formatVND(timeCost + foodCost)}
+                  </span>
                 </div>
               ) : (
                 <div className="flex justify-between text-sm">
@@ -702,7 +709,9 @@ function EndSessionDialog({
               <Label className="text-foreground text-sm">Khách hàng</Label>
               <div className="text-sm text-foreground mt-1">
                 {customerName}
-                {customerPhone && <span className="text-muted-foreground ml-1">({customerPhone})</span>}
+                {customerPhone && (
+                  <span className="text-muted-foreground ml-1">({customerPhone})</span>
+                )}
                 {isVIP && <span className="text-yellow-500 ml-1">⭐ VIP</span>}
               </div>
             </div>
@@ -779,11 +788,7 @@ function EndSessionDialog({
             >
               <CheckCircle2 className="h-4 w-4 mr-2" /> Xác nhận
             </Button>
-            <Button
-              variant="outline"
-              className="w-full h-10 border-border"
-              onClick={onRetryPrint}
-            >
+            <Button variant="outline" className="w-full h-10 border-border" onClick={onRetryPrint}>
               <Printer className="h-4 w-4 mr-2" /> In lại
             </Button>
             <Button variant="ghost" className="w-full h-10" onClick={onSkipPrint}>

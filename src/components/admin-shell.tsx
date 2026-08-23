@@ -180,7 +180,6 @@ export function AdminShell() {
         playNotifSound();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioUnlocked]);
 
   useEffect(() => {

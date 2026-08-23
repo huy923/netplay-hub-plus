@@ -8,11 +8,44 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogTrigger,DialogFooter,} from "@/components/ui/dialog";
-import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue,} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatVND } from "@/lib/format";
-import {listCustomers,createCustomer,updateCustomer,deleteCustomer,getLoyaltyTransactions,earnLoyaltyPoints,burnLoyaltyPoints,} from "@/lib/cybernet.functions";
-import {Plus,Search,Crown,Pencil,Trash2,Users,Eye,Coins,ArrowUp,ArrowDown,History} from "lucide-react";
+import {
+  listCustomers,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
+  getLoyaltyTransactions,
+  earnLoyaltyPoints,
+  burnLoyaltyPoints,
+} from "@/lib/cybernet.functions";
+import {
+  Plus,
+  Search,
+  Crown,
+  Pencil,
+  Trash2,
+  Users,
+  Eye,
+  Coins,
+  ArrowUp,
+  ArrowDown,
+  History,
+} from "lucide-react";
 import { formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/customers")({ component: Customers });
