@@ -94,17 +94,17 @@ function PlayerHome() {
     refetchInterval: 10000,
   });
 
-  const pendingFoodOrders = (allOrders as any[]).filter(
-    (o: any) =>
+  const pendingFoodOrders = allOrders.filter(
+    (o) =>
       o.status === "Chờ" ||
       o.status === "Chờ xử lý" ||
       o.status === "Đang chuẩn bị" ||
       o.status === "Đã giao",
   );
-  const foodAmount = pendingFoodOrders.reduce((sum: number, o: any) => {
+  const foodAmount = pendingFoodOrders.reduce((sum: number, o) => {
     const foodOnly = (o.items || [])
-      .filter((i: any) => i.type !== "time")
-      .reduce((s: number, i: any) => s + i.price * i.qty, 0);
+      .filter((i) => i.type !== "time")
+      .reduce((s, i) => s + i.price * i.qty, 0);
     return sum + foodOnly;
   }, 0);
 
@@ -120,17 +120,19 @@ function PlayerHome() {
   const foodItems = Object.entries(groupedFood);
 
   const getCustomerFn = useServerFn(getCustomerByName);
-  const [custObj, setCustObj] = useState<any>(null);
+  const [custObj, setCustObj] = useState<{ name?: string; phone?: string; tier?: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!machine?.customer || machine.customer === "Khách vãng lai") {
       setCustObj(null);
       return;
     }
-    const raw: any = machine.customer;
+    const raw = machine.customer;
     const name =
       typeof raw === "object" && raw
-        ? raw.name
+        ? (raw as { name?: string }).name
         : typeof raw === "string"
           ? (() => {
               try {
@@ -142,10 +144,12 @@ function PlayerHome() {
           : undefined;
     if (name) {
       getCustomerFn({ data: { name } })
-        .then((c: any) => setCustObj(c))
+        .then((c: unknown) =>
+          setCustObj(c as { name?: string; phone?: string; tier?: string } | null),
+        )
         .catch(() => setCustObj(null));
     }
-  }, [machine?.customer]);
+  }, [machine?.customer, getCustomerFn]);
 
   const isVIP = custObj?.tier === "VIP";
   const vipOf = (base: number) => (isVIP ? Math.round(base * 0.1) : 0);
@@ -191,7 +195,7 @@ function PlayerHome() {
     } else if (machine.status === "in_use" && machine.remaining) {
       setRemaining(parseTime(machine.remaining));
     }
-  }, [machine]);
+  }, [machine, foodAmount, foodItems, vipOf]);
 
   useEffect(() => {
     if (remaining <= 0) return;
@@ -216,7 +220,7 @@ function PlayerHome() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [machine, remaining > 0, foodAmount]);
+  }, [machine, remaining > 0, foodAmount, foodItems, vipOf]);
 
   useEffect(() => {
     if (!machine || machine.status !== "in_use" || !machine.startedAt) return;
@@ -1348,7 +1352,7 @@ function ExtendTab({
     if (!ordered || cancelLeft <= 0) return;
     const iv = setInterval(() => setCancelLeft((c) => c - 1), 1000);
     return () => clearInterval(iv);
-  }, [ordered, cancelLeft > 0]);
+  }, [ordered, cancelLeft]);
 
   const handleOrderCombo = async () => {
     if (!pick) return;
