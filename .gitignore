@@ -36,9 +36,7 @@ dist-ssr
 *.sln
 *.sw?
 .understand-anything
-.github
 .opencode
-.github/workflows
 .aionrs
 .env
 prisma/dev.db

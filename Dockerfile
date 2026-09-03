@@ -4,7 +4,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat openssl postgresql-client
 COPY package.json package-lock.json ./
 COPY .env.example ./
-COPY prisma ./prisma
+COPY prisma ./prismaw
 COPY scripts ./scripts
 RUN npm install
 

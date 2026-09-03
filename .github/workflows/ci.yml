@@ -18,3 +18,33 @@ jobs:
       # - run: npx prisma db push --schema=./prisma/schema.prisma
       - run: npm run lint
       - run: npm test
+  test-windows:
+    runs-on: windows-latest
+    env:
+      ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      DATABASE_URL: "file:./dev.db"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: npm install
+      - run: npx prisma generate
+      - run: npx prisma db push
+      - run: npx prisma db seed
+      - run: npm run lint
+      - run: npm test
+  test-macos:
+    runs-on: macos-latest
+    env:
+      ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      DATABASE_URL: "file:./dev.db"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: npm install
+      - run: npx prisma generate
+      - run: npx prisma db push
+      - run: npx prisma db seed
+      - run: npm run lint
+      - run: npm test

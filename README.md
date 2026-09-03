@@ -46,19 +46,12 @@ thungan
 thungan123
 ```
 
-### người dùng test
-
-```bash
-123456
-123456
-```
-
 ## Lần sau chỉ cần
 
 ```bash
 npm run dev
 ```
-
+w
 ## Kiểm tra database
 
 ```bash
