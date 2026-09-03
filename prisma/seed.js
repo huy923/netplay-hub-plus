@@ -347,7 +347,5 @@ async function main() {
     await prisma.customer.upsert({ where: { phone: c.phone }, create: c, update: {} });
   }
   console.log("✅ Seed done");
-  
 }
-
 main().finally(() => prisma.$disconnect());
