@@ -79,7 +79,7 @@ model Keyboard {
 	updatedAt    DateTime @updatedAt
 }
 
-	model Invoice {
+model Invoice {
 	id         String   @id @default(cuid())
 	machine    String
 	customer   String
