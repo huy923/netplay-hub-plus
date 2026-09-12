@@ -17,10 +17,9 @@
 
 ## 🎬 Demo
 
-<video src="demo.mp4" controls playsinline muted width="100%">
-  <source src="demo.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+<https://github.com/user-attachments/assets/897eddd1-4c80-4546-96a6-726e16c92dc0>
+
+
 
 ---
 
