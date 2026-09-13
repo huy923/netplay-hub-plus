@@ -11,7 +11,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "22.12.x" }
       - run: npm install --legacy-peer-deps
-      - run: npx prisma generate`
+      - run: npx prisma generate
       - run: npx prisma db push
       - run: npx prisma db seed
       # - run: npx prisma generate --schema=./prisma/schema.prisma
