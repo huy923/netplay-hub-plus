@@ -94,27 +94,22 @@
 
 ## 🚀 Cài đặt & Chạy / Quick Start
 
-### Cách 1 — Nhanh nhất (chạy dự án)
-
-```bash
-npm install
-npx prisma generate
-npm run dev
-```
-
-### Cách 2 — Đầy đủ (đã reset database + dữ liệu mẫu)
+### Cách 1 — Đầy đủ (đã reset database + dữ liệu mẫu)
 
 > Chỉ chạy bước DB khi cần tạo / nạp lại dữ liệu.
 
 ```bash
 npm install
 npx prisma generate
-npx prisma db push     # tạo bảng trong dev.db (SQLite)
-npx prisma db seed     # nạp dữ liệu mẫu
+npx prisma db push     
+npx prisma db seed     
 npm run dev
 ```
 
-### Cách 3 — Docker (PostgreSQL, lần đầu)
+> `npx prisma db push` tạo database theo schema, `npx prisma db seed` nạp dữ liệu mẫu.
+> lần sau chỉ cần `npm run dev` để chạy dev server.
+
+### Cách 2 — Docker (PostgreSQL, lần đầu)
 
 ```bash
 docker-compose up --build -d
