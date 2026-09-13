@@ -1,19 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-export type Theme = "light" | "dark" | "system";
-type ResolvedTheme = "light" | "dark";
-
-const ThemeCtx = createContext<{
-  theme: Theme;
-  resolved: ResolvedTheme;
-  setTheme: (t: Theme) => void;
-  toggle: () => void;
-}>({
-  theme: "system",
-  resolved: "dark",
-  setTheme: () => {},
-  toggle: () => {},
-});
+import { ThemeCtx, type Theme, type ResolvedTheme } from "./theme-context";
 
 function getSystemPref(): ResolvedTheme {
   if (typeof window === "undefined") return "dark";
@@ -69,5 +56,3 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     <ThemeCtx.Provider value={{ theme, resolved, setTheme, toggle }}>{children}</ThemeCtx.Provider>
   );
 }
-
-export const useTheme = () => useContext(ThemeCtx);

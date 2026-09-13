@@ -215,22 +215,6 @@ function buildQrUrl(bankInfo: InvoicePrintProps["bankInfo"]): string {
   return `https://vietqr.app/img?acc=${encodeURIComponent(bankInfo.accountNo)}&bank=${encodeURIComponent(bankCode)}&amount=${bankInfo.amount}&des=${encodeURIComponent(bankInfo.note)}`;
 }
 
-export default function InvoicePrint({ invoice, bankInfo }: InvoicePrintProps) {
-  const printInvoice = () => {
-    const qrUrl = buildQrUrl(bankInfo);
-    const html = generateReceiptHtml(invoice, "CyberNet", "Dia chi quan net", "", qrUrl);
-    const printWindow = window.open("", "_blank", "width=500,height=700");
-    if (printWindow) {
-      printWindow.document.write(html);
-      printWindow.document.close();
-    }
-  };
-
-  return {
-    print: printInvoice,
-  } as const;
-}
-
 export function useInvoicePrint() {
   const getSettingsFn = useServerFn(getSettings);
 

@@ -35,6 +35,11 @@ import { Tag, Plus, Pencil, Trash2, Percent, Coins } from "lucide-react";
 
 export const Route = createFileRoute("/admin/discounts")({ component: Discounts });
 
+type Discount = Awaited<ReturnType<typeof listDiscounts>>[number];
+type CreateDiscountInput = Parameters<typeof createDiscount>[0]["data"];
+type UpdateDiscountInput = Parameters<typeof updateDiscount>[0]["data"];
+type DiscountUpdateValues = Omit<UpdateDiscountInput, "id">;
+
 function FloatingParticle({
   delay,
   size,
@@ -87,20 +92,20 @@ function Discounts() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["discounts"] });
 
   const createM = useMutation({
-    mutationFn: (data: any) => create({ data }),
+    mutationFn: (data: CreateDiscountInput) => create({ data }),
     onSuccess: () => {
       toast.success(t("discount.added"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
   const updateM = useMutation({
-    mutationFn: (data: any) => update({ data }),
+    mutationFn: (data: UpdateDiscountInput) => update({ data }),
     onSuccess: () => {
       toast.success(t("common.updated"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
   const deleteM = useMutation({
     mutationFn: (id: string) => remove({ data: { id } }),
@@ -108,15 +113,15 @@ function Discounts() {
       toast.success(t("common.deleted"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
 
   const [q, setQ] = useState("");
   const [openAdd, setOpenAdd] = useState(false);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<Discount | null>(null);
   const now = new Date();
   const filtered = discounts.filter(
-    (d: any) =>
+    (d) =>
       !q ||
       d.code.toLowerCase().includes(q.toLowerCase()) ||
       d.name.toLowerCase().includes(q.toLowerCase()),
@@ -148,7 +153,7 @@ function Discounts() {
             <p className="text-sm text-muted-foreground">
               {t("discount.summary", {
                 total: discounts.length,
-                active: discounts.filter((d: any) => d.active).length,
+                active: discounts.filter((d) => d.active).length,
               })}
             </p>
           </div>
@@ -209,7 +214,7 @@ function Discounts() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((d: any) => {
+                {filtered.map((d) => {
                   const expired = d.expiresAt && new Date(d.expiresAt) < now;
                   const muted = !d.active || expired;
                   return (
@@ -306,7 +311,7 @@ function DiscountForm({
   loading,
 }: {
   title: string;
-  onSubmit: (v: any) => void;
+  onSubmit: (v: CreateDiscountInput) => void;
   loading?: boolean;
 }) {
   const { t } = useTranslation();
@@ -438,8 +443,8 @@ function DiscountEditForm({
   onSubmit,
   loading,
 }: {
-  initial: any;
-  onSubmit: (v: any) => void;
+  initial: Discount;
+  onSubmit: (v: DiscountUpdateValues) => void;
   loading?: boolean;
 }) {
   const { t } = useTranslation();

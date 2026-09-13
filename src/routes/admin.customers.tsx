@@ -50,6 +50,10 @@ import { formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/customers")({ component: Customers });
 
+type Customer = Awaited<ReturnType<typeof listCustomers>>[number];
+type CreateCustomerInput = Parameters<typeof createCustomer>[0]["data"];
+type UpdateCustomerInput = Parameters<typeof updateCustomer>[0]["data"];
+
 function FloatingParticle({
   delay,
   size,
@@ -102,20 +106,20 @@ function Customers() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["customers"] });
 
   const createM = useMutation({
-    mutationFn: (data: any) => create({ data }),
+    mutationFn: (data: CreateCustomerInput) => create({ data }),
     onSuccess: () => {
       toast.success(t("customer.added"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
   const updateM = useMutation({
-    mutationFn: (data: any) => update({ data }),
+    mutationFn: (data: UpdateCustomerInput) => update({ data }),
     onSuccess: () => {
       toast.success(t("common.updated"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
   const deleteM = useMutation({
     mutationFn: (id: string) => remove({ data: { id } }),
@@ -123,13 +127,13 @@ function Customers() {
       toast.success(t("common.deleted"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
 
   const [q, setQ] = useState("");
   const [openAdd, setOpenAdd] = useState(false);
-  const [editing, setEditing] = useState<any | null>(null);
-  const [detailCustomer, setDetailCustomer] = useState<any | null>(null);
+  const [editing, setEditing] = useState<Customer | null>(null);
+  const [detailCustomer, setDetailCustomer] = useState<Customer | null>(null);
 
   const getLoyalty = useServerFn(getLoyaltyTransactions);
   const doEarn = useServerFn(earnLoyaltyPoints);
@@ -148,7 +152,7 @@ function Customers() {
       refetchLoyalty();
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
   const burnM = useMutation({
     mutationFn: (v: { customerId: string; points: number }) => doBurn({ data: v }),
@@ -157,11 +161,11 @@ function Customers() {
       refetchLoyalty();
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
 
   const filtered = customers.filter(
-    (c: any) => !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q),
+    (c) => !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q),
   );
 
   return (
@@ -190,7 +194,7 @@ function Customers() {
             <p className="text-sm text-muted-foreground">
               {t("customer.summary", {
                 total: customers.length,
-                vip: customers.filter((c: any) => c.tier === "VIP").length,
+                vip: customers.filter((c) => c.tier === "VIP").length,
               })}
             </p>
           </div>
@@ -236,7 +240,7 @@ function Customers() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((c: any) => (
+                {filtered.map((c) => (
                   <tr
                     key={c.id}
                     className="border-b border-border/50 last:border-0 hover:bg-muted/50"
@@ -412,7 +416,7 @@ function Customers() {
                           </tr>
                         </thead>
                         <tbody>
-                          {loyaltyTx.map((tx: any) => (
+                          {loyaltyTx.map((tx) => (
                             <tr key={tx.id} className="border-b border-border/50 last:border-0">
                               <td className="py-2 px-3">
                                 {tx.type === "earn" ? (
@@ -464,7 +468,7 @@ function CustomerForm({
   loading,
 }: {
   title: string;
-  initial?: any;
+  initial?: Customer;
   onSubmit: (v: { name: string; phone: string; tier: string }) => void;
   loading?: boolean;
 }) {

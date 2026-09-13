@@ -43,6 +43,15 @@ import {
 } from "@/lib/cybernet.functions";
 import { useKitchenSlip } from "@/components/payment/kitchen-slip";
 
+type Machine = Awaited<ReturnType<typeof listMachines>>[number];
+type MenuItem = Awaited<ReturnType<typeof listMenu>>[number];
+type InvoiceWithItems = Awaited<ReturnType<typeof getAllPendingFoodOrders>>[number];
+type EndSessionResult = Awaited<ReturnType<typeof endMachineSession>>;
+type ValidateDiscountResult = Awaited<ReturnType<typeof validateDiscount>>;
+type ValidDiscount = Extract<ValidateDiscountResult, { valid: true }>;
+type Customer = Exclude<Awaited<ReturnType<typeof getCustomerByName>>, null>;
+type PayMethod = "Tiền mặt" | "QR" | "Ví điện tử";
+
 export const Route = createFileRoute("/admin/pos")({ component: POS });
 
 function FloatingParticle({
@@ -111,16 +120,16 @@ function POS() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [machineId, setMachineId] = useState<string>("");
   const [hours, setHours] = useState(1);
-  const [method, setMethod] = useState<"Tiền mặt" | "QR" | "Ví điện tử">("QR");
+  const [method, setMethod] = useState<PayMethod>("QR");
   const [zoneFilter, setZoneFilter] = useState<string>("all");
   const [discountCode, setDiscountCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState<any>(null);
+  const [appliedDiscount, setAppliedDiscount] = useState<ValidDiscount | null>(null);
   const [discountError, setDiscountError] = useState("");
   const [validatingDiscount, setValidatingDiscount] = useState(false);
 
   // Settlement state
   const [settleMachineId, setSettleMachineId] = useState<string>("");
-  const settleMachine = machines.find((m: any) => m.name === settleMachineId) as any;
+  const settleMachine = machines.find((m) => m.name === settleMachineId);
   const { data: unpaidInvoices = [], refetch: refetchUnpaid } = useQuery({
     queryKey: ["unpaid-invoices", settleMachineId],
     queryFn: () => getUnpaidFn({ data: { machine: settleMachineId } }),
@@ -133,18 +142,18 @@ function POS() {
     const elapsed = (Date.now() - new Date(settleMachine.startedAt).getTime()) / 1000;
     const billedHours = Math.ceil(Math.max(0, elapsed) / 3600);
     return billedHours * settleMachine.pricePerHour;
-  }, [settleMachine, unpaidInvoices]);
+  }, [settleMachine]);
 
   const VIP_DISCOUNT_PERCENT = 10;
   const getCustomerFn = useServerFn(getCustomerByName);
-  const foodOfInvoice = (inv: any) =>
+  const foodOfInvoice = (inv: InvoiceWithItems) =>
     (inv.items || [])
-      .filter((item: any) => item.type !== "time")
-      .reduce((sum: number, item: any) => sum + item.price * item.qty, 0);
-  const settleFoodTotal = unpaidInvoices.reduce((s: number, inv: any) => s + foodOfInvoice(inv), 0);
+      .filter((item) => item.type !== "time")
+      .reduce((sum: number, item) => sum + item.price * item.qty, 0);
+  const settleFoodTotal = unpaidInvoices.reduce((s: number, inv) => s + foodOfInvoice(inv), 0);
   const settleSubtotal = settleTimeCost + settleFoodTotal;
   const settleVipDiscount = settleMachine?.customer ? 0 : 0; // Will be computed via settleCustomer
-  const [settleCustomer, setSettleCustomer] = useState<any>(null);
+  const [settleCustomer, setSettleCustomer] = useState<Customer | null>(null);
 
   useEffect(() => {
     if (!settleMachine?.customer) {
@@ -152,11 +161,11 @@ function POS() {
       return;
     }
     getCustomerFn({ data: { name: settleMachine.customer } })
-      .then((c: any) => {
+      .then((c) => {
         setSettleCustomer(c?.tier === "VIP" ? c : null);
       })
       .catch(() => setSettleCustomer(null));
-  }, [settleMachine?.customer]);
+  }, [settleMachine?.customer, getCustomerFn]);
 
   const settleVipDiscountAmount = settleCustomer
     ? Math.round((settleSubtotal * VIP_DISCOUNT_PERCENT) / 100)
@@ -164,17 +173,16 @@ function POS() {
   const settleFinalTotal = Math.max(0, settleSubtotal - settleVipDiscountAmount);
 
   const filteredMachines = useMemo(
-    () => (zoneFilter === "all" ? machines : machines.filter((m: any) => m.area === zoneFilter)),
+    () => (zoneFilter === "all" ? machines : machines.filter((m) => m.area === zoneFilter)),
     [machines, zoneFilter],
   );
-  const selectedMachine =
-    filteredMachines.find((m: any) => m.id === machineId) ?? filteredMachines[0];
+  const selectedMachine = filteredMachines.find((m) => m.id === machineId) ?? filteredMachines[0];
 
   const items = useMemo(
-    () => menu.filter((m: any) => cart[m.id]).map((m: any) => ({ ...m, qty: cart[m.id] })),
+    () => menu.filter((m) => cart[m.id]).map((m) => ({ ...m, qty: cart[m.id]! })),
     [cart, menu],
   );
-  const foodTotal = items.reduce((s: number, i: any) => s + i.price * i.qty, 0);
+  const foodTotal = items.reduce((s: number, i) => s + i.price * i.qty, 0);
   const playTotal = mode === "play" ? (selectedMachine?.pricePerHour ?? 0) * hours : 0;
   const subtotal = foodTotal + playTotal;
   const discountAmount = appliedDiscount?.discountAmount ?? 0;
@@ -228,7 +236,7 @@ function POS() {
           method,
           status: "Chờ xử lý",
           discountCode: appliedDiscount ? discountCode.trim() : undefined,
-          items: items.map((i: any) => ({
+          items: items.map((i) => ({
             name: i.name,
             price: i.price,
             qty: i.qty,
@@ -243,7 +251,7 @@ function POS() {
       handleRemoveDiscount();
       qc.invalidateQueries({ queryKey: ["invoices"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
 
   // Play + food (current behavior)
@@ -261,7 +269,7 @@ function POS() {
           status: t("dashboard.statusPaid"),
           discountCode: appliedDiscount ? discountCode.trim() : undefined,
           items: [
-            ...items.map((i: any) => ({
+            ...items.map((i) => ({
               name: i.name,
               qty: i.qty,
               type: "menu",
@@ -293,7 +301,7 @@ function POS() {
       qc.invalidateQueries({ queryKey: ["invoices"] });
       qc.invalidateQueries({ queryKey: ["menu"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
 
   // Settlement
@@ -305,7 +313,7 @@ function POS() {
       if (settleMachine?.status === "in_use") {
         const payMethod = method === "Tiền mặt" ? "cash" : "qr";
         const result = await endSessionFn({
-          data: { machineId: settleMachine.id, paymentMethod: payMethod as any },
+          data: { machineId: settleMachine.id, paymentMethod: payMethod },
         });
         if (payMethod === "cash" && result?.paymentId) {
           await confirmIdleFn({
@@ -322,7 +330,7 @@ function POS() {
       if (unpaidInvoices.length > 0) {
         return settleFn({
           data: {
-            invoiceIds: unpaidInvoices.map((i: any) => i.id),
+            invoiceIds: unpaidInvoices.map((i) => i.id),
             method,
           },
         });
@@ -335,23 +343,23 @@ function POS() {
       qc.invalidateQueries({ queryKey: ["machines"] });
       setSettleMachineId("");
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
 
   // Print kitchen slip
   const printKitchenMutation = useMutation({
-    mutationFn: async (invoice: any) => {
+    mutationFn: async (invoice: InvoiceWithItems) => {
       await kitchenSlip.print({
         orderId: invoice.id,
         machine: invoice.machine,
         customer: invoice.customer || undefined,
-        items: invoice.items.map((i: any) => ({
+        items: invoice.items.map((i) => ({
           name: i.name,
           price: i.price,
           qty: i.qty,
           type: i.type,
         })),
-        createdAt: invoice.createdAt,
+        createdAt: invoice.createdAt.toISOString(),
       });
       await updateOrderStatusFn({
         data: { id: invoice.id, status: "Đang chuẩn bị" },
@@ -362,7 +370,7 @@ function POS() {
       refetchUnpaid();
       qc.invalidateQueries({ queryKey: ["orders"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
 
   return (
@@ -462,7 +470,7 @@ function POS() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {allPendingOrders.map((inv: any) => {
+                  {allPendingOrders.map((inv) => {
                     const isPreparing = inv.status === "Đang chuẩn bị";
                     return (
                       <div
@@ -492,8 +500,8 @@ function POS() {
                         </div>
                         <div className="space-y-1 mb-2">
                           {inv.items
-                            .filter((i: any) => i.type !== "time")
-                            .map((item: any, idx: number) => (
+                            .filter((i) => i.type !== "time")
+                            .map((item, idx: number) => (
                               <div key={idx} className="flex justify-between text-sm">
                                 <span className="text-foreground">
                                   {item.qty}× {item.name}
@@ -626,7 +634,7 @@ function POS() {
 
                   {/* Food orders */}
                   {unpaidInvoices.length > 0 &&
-                    unpaidInvoices.map((inv: any) => (
+                    unpaidInvoices.map((inv) => (
                       <div key={inv.id} className="border border-border rounded-xl p-3 bg-muted/30">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
@@ -636,8 +644,8 @@ function POS() {
                         </div>
                         <div className="space-y-1 mb-2">
                           {inv.items
-                            .filter((item: any) => item.type !== "time")
-                            .map((item: any, idx: number) => (
+                            .filter((item) => item.type !== "time")
+                            .map((item, idx: number) => (
                               <div key={idx} className="flex justify-between text-sm">
                                 <span className="text-foreground">
                                   {item.qty}× {item.name}
@@ -686,7 +694,7 @@ function POS() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {unpaidInvoices.map((inv: any) => (
+                  {unpaidInvoices.map((inv) => (
                     <div key={inv.id} className="border border-border rounded-xl p-3 bg-muted/30">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
@@ -696,8 +704,8 @@ function POS() {
                       </div>
                       <div className="space-y-1 mb-2">
                         {inv.items
-                          .filter((item: any) => item.type !== "time")
-                          .map((item: any, idx: number) => (
+                          .filter((item) => item.type !== "time")
+                          .map((item, idx: number) => (
                             <div key={idx} className="flex justify-between text-sm">
                               <span className="text-foreground">
                                 {item.qty}× {item.name}
@@ -747,7 +755,7 @@ function POS() {
                   <option value="" className="bg-background text-muted-foreground">
                     —
                   </option>
-                  {machines.map((m: any) => (
+                  {machines.map((m) => (
                     <option key={m.id} value={m.name} className="bg-background">
                       {m.name} {m.status === "in_use" ? `(${m.customer || "đang dùng"})` : ""}
                     </option>
@@ -807,7 +815,7 @@ function POS() {
                       ].map((p) => (
                         <button
                           key={p.k}
-                          onClick={() => setMethod(p.k as any)}
+                          onClick={() => setMethod(p.k as PayMethod)}
                           className={`rounded-md border p-2 text-xs flex flex-col items-center gap-1 transition ${
                             method === p.k
                               ? "border-primary/40 bg-primary/20 text-primary"
@@ -849,7 +857,7 @@ function POS() {
                 {t("pos.menu")}
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {menu.map((m: any) => (
+                {menu.map((m) => (
                   <button
                     key={m.id}
                     onClick={() => add(m.id)}
@@ -922,7 +930,7 @@ function POS() {
                           {t("pos.noMachines")}
                         </option>
                       )}
-                      {filteredMachines.map((m: any) => (
+                      {filteredMachines.map((m) => (
                         <option key={m.id} value={m.id} className="bg-background">
                           {m.name} — {formatVND(m.pricePerHour)}/h
                         </option>
@@ -966,7 +974,7 @@ function POS() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  {items.map((i: any) => (
+                  {items.map((i) => (
                     <div key={i.id} className="flex items-center gap-2 bg-muted/50 rounded-lg p-2">
                       <div className="h-10 w-10 rounded-lg bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
                         {i.image ? (
@@ -1118,7 +1126,7 @@ function POS() {
                   ].map((p) => (
                     <button
                       key={p.k}
-                      onClick={() => setMethod(p.k as any)}
+                      onClick={() => setMethod(p.k as PayMethod)}
                       className={`rounded-md border p-2 text-xs flex flex-col items-center gap-1 transition ${
                         method === p.k
                           ? "border-primary/40 bg-primary/20 text-primary"

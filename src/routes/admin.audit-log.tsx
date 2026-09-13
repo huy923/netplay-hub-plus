@@ -147,7 +147,7 @@ function AuditLog() {
                     </tr>
                   </thead>
                   <tbody>
-                    {auditLogs.map((log: any) => (
+                    {auditLogs.map((log) => (
                       <tr
                         key={log.id}
                         className="border-b border-border/50 last:border-0 hover:bg-muted/50"
@@ -204,7 +204,7 @@ function AuditLog() {
                     </tr>
                   </thead>
                   <tbody>
-                    {loginAttempts.map((att: any) => (
+                    {loginAttempts.map((att) => (
                       <tr
                         key={att.id}
                         className="border-b border-border/50 last:border-0 hover:bg-muted/50"

@@ -22,7 +22,7 @@ import {
   PackagePlus,
   Volume2,
 } from "lucide-react";
-import { useTheme } from "./theme-provider";
+import { useTheme } from "./theme-context";
 import { Button } from "./ui/button";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -43,6 +43,10 @@ import { LanguageSwitcher } from "./language-switcher";
 import { useRealtime } from "@/hooks/use-realtime";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
+import type { Notification as PrismaNotification, Invoice } from "@prisma/client";
+
+type NotificationItem = PrismaNotification;
+type StaffRequestItem = Invoice;
 
 const adminNav = (t: (key: string) => string) => [
   { to: "/admin", icon: LayoutDashboard, label: t("nav.dashboard") },
@@ -106,7 +110,7 @@ export function AdminShell() {
         }
       }
     });
-  }, [loc.pathname]);
+  }, [currentUser, loc.pathname, navigate]);
 
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
@@ -139,13 +143,13 @@ export function AdminShell() {
     refetchInterval: 30_000,
   });
 
-  const { data: notifications = [], refetch: refetchNotifs } = useQuery({
+  const { data: notifications = [], refetch: refetchNotifs } = useQuery<NotificationItem[]>({
     queryKey: ["notifications"],
     queryFn: () => fetchNotifications({ data: { limit: 30 } }),
     refetchInterval: 10_000,
   });
 
-  const { data: staffRequests = [], refetch: refetchStaffReqs } = useQuery({
+  const { data: staffRequests = [], refetch: refetchStaffReqs } = useQuery<StaffRequestItem[]>({
     queryKey: ["staff-requests"],
     queryFn: () => fetchStaffReqs(),
     refetchInterval: 5_000,
@@ -157,6 +161,48 @@ export function AdminShell() {
   const [showBellHint, setShowBellHint] = useState(false);
   const beepedRef = useRef(false);
   const bellDoneRef = useRef(false);
+
+  const playNotifSound = useCallback(() => {
+    try {
+      let ctx = audioCtxRef.current;
+      if (!ctx || ctx.state === "closed") {
+        ctx = new AudioContext();
+        audioCtxRef.current = ctx;
+      }
+      const playNotes = () => {
+        try {
+          const notes = [880, 1100, 1320, 1100, 880];
+          notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.12 + 0.12);
+            osc.start(ctx.currentTime + i * 0.12);
+            osc.stop(ctx.currentTime + i * 0.12 + 0.12);
+          });
+        } catch {
+          /* ignore */
+        }
+        setAudioUnlocked(true);
+      };
+      if (ctx.state === "suspended") {
+        const resumePromise = ctx.resume();
+        if (resumePromise && typeof resumePromise.then === "function") {
+          resumePromise.then(playNotes).catch(() => {});
+        } else {
+          playNotes();
+        }
+        return;
+      }
+      playNotes();
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -180,7 +226,7 @@ export function AdminShell() {
         playNotifSound();
       }
     }
-  }, [audioUnlocked]);
+  }, [audioUnlocked, playNotifSound]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -255,48 +301,6 @@ export function AdminShell() {
       window.removeEventListener("click", unlockAudio);
     };
   }, [unlockAudio]);
-
-  const playNotifSound = () => {
-    try {
-      let ctx = audioCtxRef.current;
-      if (!ctx || ctx.state === "closed") {
-        ctx = new AudioContext();
-        audioCtxRef.current = ctx;
-      }
-      const playNotes = () => {
-        try {
-          const notes = [880, 1100, 1320, 1100, 880];
-          notes.forEach((freq, i) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
-            gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.12);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.12 + 0.12);
-            osc.start(ctx.currentTime + i * 0.12);
-            osc.stop(ctx.currentTime + i * 0.12 + 0.12);
-          });
-        } catch {
-          /* ignore */
-        }
-        setAudioUnlocked(true);
-      };
-      if (ctx.state === "suspended") {
-        const resumePromise = ctx.resume();
-        if (resumePromise && typeof resumePromise.then === "function") {
-          resumePromise.then(playNotes).catch(() => {});
-        } else {
-          playNotes();
-        }
-        return;
-      }
-      playNotes();
-    } catch {
-      /* ignore */
-    }
-  };
 
   const sseStatusRef = useRef<"connected" | "disconnected" | "connecting">("connecting");
   const [sseStatus, setSseStatusState] = useState<"connected" | "disconnected" | "connecting">(
@@ -401,10 +405,10 @@ export function AdminShell() {
 
   const lastNotifIdRef = useRef<string | null>(null);
   useEffect(() => {
-    const notifs = (notifications as any[]) ?? [];
+    const notifs = notifications ?? [];
     if (notifs.length === 0) return;
     const latest = notifs.find(
-      (n: any) =>
+      (n) =>
         n.type === "FOOD_ORDER" ||
         n.type === "COMBO_ORDER" ||
         n.type === "MACHINE_EXTENDED" ||
@@ -416,10 +420,10 @@ export function AdminShell() {
       lastNotifIdRef.current = latest.id;
       if (sseStatusRef.current !== "connected") playNotifSound();
     }
-  }, [notifications as any]);
+  }, [notifications, playNotifSound]);
 
-  const unreadNotifs = (notifications as any[]).filter(
-    (n: any) =>
+  const unreadNotifs = notifications.filter(
+    (n) =>
       !n.read &&
       (n.type === "FOOD_ORDER" ||
         n.type === "COMBO_ORDER" ||
@@ -428,7 +432,7 @@ export function AdminShell() {
   );
 
   const pendingReqs = cursingReqs.filter((r: { status: string }) => r.status === "pending");
-  const pendingStaffReqs = (staffRequests as any[]).filter((r: any) => r.status === "Chờ");
+  const pendingStaffReqs = staffRequests.filter((r) => r.status === "Chờ");
   const notifCount =
     pendingReqs.length + lowStockItems.length + unreadNotifs.length + pendingStaffReqs.length;
 
@@ -468,28 +472,31 @@ export function AdminShell() {
   const retryTimestampsRef = useRef<Map<string, number>>(new Map());
   const retryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const showDesktopNotif = (title: string, body: string) => {
-    if ("Notification" in window && Notification.permission === "granted") {
-      const n = new Notification(title, {
-        body,
-        icon: "/favicon.ico",
-        tag: "cybernet-staff",
-        requireInteraction: true,
-      });
-      n.onclick = () => {
-        window.focus();
-        navigate({ to: "/admin/payments" });
-        n.close();
-      };
-    }
-  };
+  const showDesktopNotif = useCallback(
+    (title: string, body: string) => {
+      if ("Notification" in window && Notification.permission === "granted") {
+        const n = new Notification(title, {
+          body,
+          icon: "/favicon.ico",
+          tag: "cybernet-staff",
+          requireInteraction: true,
+        });
+        n.onclick = () => {
+          window.focus();
+          navigate({ to: "/admin/payments" });
+          n.close();
+        };
+      }
+    },
+    [navigate],
+  );
 
   useEffect(() => {
     const checkRetry = () => {
       const now = Date.now();
       for (const [invoiceId, timestamp] of retryTimestampsRef.current.entries()) {
         if (now - timestamp >= 30_000) {
-          const req = (staffRequests as any[]).find((r: any) => r.id === invoiceId);
+          const req = staffRequests.find((r) => r.id === invoiceId);
           if (req && req.status === "Chờ" && !req.assignedTo) {
             playNotifSound();
             toast.warning(`${req.machine}`, {
@@ -516,7 +523,7 @@ export function AdminShell() {
     return () => {
       if (retryIntervalRef.current) clearInterval(retryIntervalRef.current);
     };
-  }, [staffRequests, navigate]);
+  }, [staffRequests, navigate, showDesktopNotif, t, playNotifSound]);
 
   if (!user) return null;
   const nav = user.role === "admin" ? adminNav(t) : cashierNav(t);
@@ -780,7 +787,7 @@ export function AdminShell() {
                 ),
               )}
 
-            {pendingStaffReqs.map((r: any) => (
+            {pendingStaffReqs.map((r) => (
               <div
                 key={r.id}
                 className="px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer"
@@ -826,7 +833,7 @@ export function AdminShell() {
               </div>
             ))}
 
-            {unreadNotifs.map((n: any) => (
+            {unreadNotifs.map((n) => (
               <div
                 key={n.id}
                 className="px-4 py-3 hover:bg-muted/50 transition-colors flex items-start justify-between gap-2"

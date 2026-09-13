@@ -20,6 +20,7 @@ import {
   Tooltip,
   CartesianGrid,
   Legend,
+  type TooltipProps,
 } from "recharts";
 import {
   BarChart3,
@@ -118,7 +119,7 @@ function Reports() {
   const totalRevenue = report?.totalRevenue ?? 0;
   const totalInvoices = report?.totalInvoices ?? 0;
   const totalHours = report?.totalHours ?? 0;
-  const monthly = (report?.monthly ?? []).map((m: any) => ({
+  const monthly = (report?.monthly ?? []).map((m) => ({
     ...m,
     label: toLabel(m.month),
   }));
@@ -144,17 +145,17 @@ function Reports() {
   const comparison = analytics?.comparison;
   const prediction = analytics?.prediction;
 
-  const dailyRevenue = (analytics?.dailyRevenue ?? []).map((d: any) => ({
+  const dailyRevenue = (analytics?.dailyRevenue ?? []).map((d) => ({
     ...d,
     label: d.date.slice(8),
   }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload?.length) {
       return (
         <div className="bg-background border border-border rounded-lg px-3 py-2 text-sm shadow-lg">
           <p className="text-muted-foreground">{label}</p>
-          <p className="font-semibold text-foreground">{formatVND(payload[0].value)}</p>
+          <p className="font-semibold text-foreground">{formatVND(payload[0].value ?? 0)}</p>
         </div>
       );
     }
@@ -228,7 +229,7 @@ function Reports() {
               <PieIcon className="h-4 w-4 text-purple-400" />
               {t("report.revenueBreakdown")}
             </div>
-            {pieData.every((d: any) => d.value === 0) ? (
+            {pieData.every((d) => d.value === 0) ? (
               <p className="text-sm text-muted-foreground/60 py-8 text-center">
                 {t("common.noData")}
               </p>
@@ -245,7 +246,7 @@ function Reports() {
                     innerRadius={50}
                     paddingAngle={4}
                   >
-                    {pieData.map((_: any, i: number) => (
+                    {pieData.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
@@ -282,7 +283,7 @@ function Reports() {
                     innerRadius={50}
                     paddingAngle={4}
                   >
-                    {usageData.map((_: any, i: number) => (
+                    {usageData.map((_, i) => (
                       <Cell key={i} fill={MACHINE_COLORS[i % MACHINE_COLORS.length]} />
                     ))}
                   </Pie>
@@ -481,7 +482,7 @@ function Reports() {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((inv: any) => (
+                  {invoices.map((inv) => (
                     <tr
                       key={inv.id}
                       className="border-b border-border/50 last:border-0 hover:bg-muted/50"

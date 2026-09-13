@@ -235,10 +235,6 @@ function generateKitchenSlipHtml(
 </html>`;
 }
 
-export default function KitchenSlip() {
-  return null;
-}
-
 export function useKitchenSlip() {
   const getSettingsFn = useServerFn(getSettings);
   const printWindowRef = useRef<Window | null>(null);

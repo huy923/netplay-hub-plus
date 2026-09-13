@@ -97,6 +97,9 @@ function getBankCode(bankName: string): string {
   return bankName.replace(/\s+/g, "").substring(0, 6).toUpperCase();
 }
 
+type PendingPaymentResult = { paymentId: string; invoiceId: string; amount: number } | null;
+type CreatePaymentResult = { paymentId: string; invoiceId: string | undefined };
+
 export default function QRPayment({
   open,
   onOpenChange,
@@ -189,7 +192,7 @@ export default function QRPayment({
       }
     };
     return () => es.close();
-  }, [open, paymentId, status]);
+  }, [open, paymentId, status, onSuccess, t]);
 
   const findPending = useServerFn(findPendingPayment);
 
@@ -203,7 +206,7 @@ export default function QRPayment({
         creatingRef.current = true;
         setPaymentId("");
         findPending({ data: { machine } })
-          .then((existing: any) => {
+          .then((existing: PendingPaymentResult) => {
             if (existing?.paymentId && existing.amount === amount) {
               setPaymentId(existing.paymentId);
               creatingRef.current = false;
@@ -216,7 +219,7 @@ export default function QRPayment({
                 machine,
                 transferNote: note || `THANHTOAN ${amount}`,
               },
-            }).then((result: any) => {
+            }).then((result: CreatePaymentResult) => {
               if (result?.paymentId) setPaymentId(result.paymentId);
               creatingRef.current = false;
             });
@@ -226,7 +229,7 @@ export default function QRPayment({
           });
       }
     }
-  }, [open]);
+  }, [open, amount, findPending, machine, mkPayment, note]);
 
   useEffect(() => {
     if (open && showStatus && status === "idle") {

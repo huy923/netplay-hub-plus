@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -34,6 +35,10 @@ import {
 export const Route = createFileRoute("/admin/settings")({ component: Settings });
 
 const PASSWORD_SESSION_KEY = "settings_password_verified";
+type TFunc = ReturnType<typeof useTranslation>["t"];
+type ChangePasswordFn = (
+  ...args: Parameters<typeof changeAdminPassword>
+) => ReturnType<typeof changeAdminPassword>;
 
 function Settings() {
   const { t } = useTranslation();
@@ -61,7 +66,7 @@ function Settings() {
         setPasswordVerified(true);
         sessionStorage.setItem(PASSWORD_SESSION_KEY, "true");
       });
-  }, []);
+  }, [getSettingsFn]);
 
   const handlePasswordSubmit = async (password: string) => {
     try {
@@ -71,8 +76,8 @@ function Settings() {
         setShowPasswordGate(false);
         sessionStorage.setItem(PASSWORD_SESSION_KEY, "true");
       }
-    } catch (e: any) {
-      toast.error(e?.message ?? t("common.error"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
     }
   };
 
@@ -435,8 +440,8 @@ function SecurityCard({
   fadeIn: (i: number) => React.CSSProperties;
   index: number;
   t: (key: string) => string;
-  changePasswordFn: any;
-  queryClient: any;
+  changePasswordFn: ChangePasswordFn;
+  queryClient: QueryClient;
 }) {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -465,8 +470,8 @@ function SecurityCard({
       setNewPw("");
       setConfirmPw("");
       queryClient.invalidateQueries({ queryKey: ["settings"] });
-    } catch (e: any) {
-      toast.error(e?.message ?? t("common.error"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
     } finally {
       setLoading(false);
     }
@@ -574,9 +579,12 @@ function BankCard({
   settings,
 }: {
   fadeIn: (i: number) => React.CSSProperties;
-  t: (key: string, vars?: Record<string, any>) => string;
+  t: TFunc;
   bankSettings?: { bankName: string; accountNo: string; accountHolder: string; qrPrefix: string };
-  saveMutation: any;
+  saveMutation: {
+    isPending: boolean;
+    mutate: (vals: Record<string, string>) => void;
+  };
   settings?: Record<string, string>;
 }) {
   const lookupBankAccountFn = useServerFn(lookupBankAccount);

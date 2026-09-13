@@ -31,6 +31,9 @@ import { Plus, Pencil, Trash2, Shield, ShieldOff, UserCog } from "lucide-react";
 
 export const Route = createFileRoute("/admin/users")({ component: Users });
 
+type User = Awaited<ReturnType<typeof listUsers>>[number];
+type UpdateUserInput = Parameters<typeof updateUser>[0]["data"];
+
 function FloatingParticle({
   delay,
   size,
@@ -88,15 +91,15 @@ function Users() {
       toast.success(t("user.added"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
   const updateM = useMutation({
-    mutationFn: (data: any) => update({ data }),
+    mutationFn: (data: UpdateUserInput) => update({ data }),
     onSuccess: () => {
       toast.success(t("common.updated"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
   const deleteM = useMutation({
     mutationFn: (id: string) => remove({ data: { id } }),
@@ -104,11 +107,11 @@ function Users() {
       toast.success(t("common.deleted"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
 
   const [openAdd, setOpenAdd] = useState(false);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<User | null>(null);
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
@@ -136,7 +139,7 @@ function Users() {
             <p className="text-sm text-muted-foreground">
               {t("user.summary", {
                 total: users.length,
-                active: users.filter((u: any) => u.active).length,
+                active: users.filter((u) => u.active).length,
               })}
             </p>
           </div>
@@ -151,9 +154,12 @@ function Users() {
               <UserForm
                 title={t("user.addNew")}
                 onSubmit={(v) =>
-                  createM.mutate(v as any, {
-                    onSuccess: () => setOpenAdd(false),
-                  })
+                  createM.mutate(
+                    { username: v.username, password: v.password ?? "", role: v.role },
+                    {
+                      onSuccess: () => setOpenAdd(false),
+                    },
+                  )
                 }
                 loading={createM.isPending}
               />
@@ -175,7 +181,7 @@ function Users() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u: any) => (
+                {users.map((u) => (
                   <tr
                     key={u.id}
                     className="border-b border-border/50 last:border-0 hover:bg-muted/50"
@@ -265,7 +271,7 @@ function UserForm({
   loading,
 }: {
   title: string;
-  initial?: any;
+  initial?: User;
   onSubmit: (v: { username: string; password?: string; role: string; active?: boolean }) => void;
   loading?: boolean;
 }) {

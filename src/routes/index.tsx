@@ -22,6 +22,6 @@ function RedirectHandler() {
     } else {
       nav({ to: "/play" });
     }
-  }, []);
+  }, [checkUser, nav]);
   return null;
 }

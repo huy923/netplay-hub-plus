@@ -52,6 +52,39 @@ import {
 } from "lucide-react";
 import QRPayment from "@/components/payment/qr-payment";
 
+type Machine = Awaited<ReturnType<typeof listMachines>>[number];
+type InvoiceWithItems = Awaited<ReturnType<typeof getUnpaidInvoicesByMachine>>[number];
+type InvoiceItem = InvoiceWithItems["items"][number];
+type EndSessionResult = Awaited<ReturnType<typeof endMachineSession>>;
+type BankInfo = Awaited<ReturnType<typeof getPublicBankSettings>>;
+type UpdateMachineInput = Parameters<typeof updateMachine>[0]["data"];
+type PrintReady = {
+  machineId: string | undefined;
+  machineName: string | undefined;
+  invoiceId: string;
+  paymentId: string;
+  amount: number;
+  payMethod: "cash" | "qr";
+  invoiceData: {
+    id: string;
+    machine: string;
+    customer: string;
+    amount: number;
+    method: string;
+    time: string;
+    status: string;
+    createdAt: string;
+    items: { name: string; price: number; qty: number; type: string }[];
+  };
+  bankInfo?: {
+    bankName: string;
+    accountNo: string;
+    accountHolder: string;
+    amount: number;
+    note: string;
+  };
+};
+
 export const Route = createFileRoute("/admin/machines")({ component: Machines });
 
 const statusMeta: Record<string, { label: string; tone: string }> = {
@@ -132,22 +165,22 @@ function Machines() {
   });
 
   const [machineOrders, setMachineOrders] = useState<
-    Record<string, { items: any[]; total: number }>
+    Record<string, { items: InvoiceItem[]; total: number }>
   >({});
 
   useEffect(() => {
-    const inUseMachines = machines.filter((m: any) => m.status === "in_use");
+    const inUseMachines = machines.filter((m) => m.status === "in_use");
     for (const m of inUseMachines) {
       getUnpaidFn({ data: { machine: m.name } })
-        .then((orders: any[]) => {
-          const allItems = orders.flatMap((o: any) => o.items || []);
-          const foodItems = allItems.filter((i: any) => i.type !== "time");
-          const total = foodItems.reduce((sum: number, i: any) => sum + i.price * i.qty, 0);
+        .then((orders: InvoiceWithItems[]) => {
+          const allItems = orders.flatMap((o) => o.items || []);
+          const foodItems = allItems.filter((i) => i.type !== "time");
+          const total = foodItems.reduce((sum, i) => sum + i.price * i.qty, 0);
           setMachineOrders((prev) => ({ ...prev, [m.name]: { items: foodItems, total } }));
         })
         .catch(() => {});
     }
-  }, [machines]);
+  }, [machines, getUnpaidFn]);
 
   const getBank = useServerFn(getPublicBankSettings);
   const { data: bankInfo } = useQuery({
@@ -171,15 +204,15 @@ function Machines() {
       toast.success(t("machine.addSuccess"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
   const updateM = useMutation({
-    mutationFn: (data: any) => update({ data }),
+    mutationFn: (data: UpdateMachineInput) => update({ data }),
     onSuccess: () => {
       toast.success(t("machine.updateSuccess"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
   const deleteM = useMutation({
     mutationFn: (id: string) => remove({ data: { id } }),
@@ -187,25 +220,25 @@ function Machines() {
       toast.success(t("machine.deleteSuccess"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
 
   const [filter, setFilter] = useState<"all" | string>("all");
   const [openAdd, setOpenAdd] = useState(false);
-  const [editing, setEditing] = useState<any | null>(null);
-  const [assigning, setAssigning] = useState<any | null>(null);
-  const [endingSession, setEndingSession] = useState<any | null>(null);
+  const [editing, setEditing] = useState<Machine | null>(null);
+  const [assigning, setAssigning] = useState<Machine | null>(null);
+  const [endingSession, setEndingSession] = useState<Machine | null>(null);
   const [, forceRender] = useState(0);
 
   const endSessionFn = useServerFn(endMachineSession);
   const confirmIdleFn = useServerFn(confirmEndSessionIdle);
   const { print, retryPrint } = useInvoicePrint();
-  const [printReady, setPrintReady] = useState<any>(null);
+  const [printReady, setPrintReady] = useState<PrintReady | null>(null);
 
   const endSessionM = useMutation({
     mutationFn: (data: { machineId: string; paymentMethod: "cash" | "qr" }) =>
       endSessionFn({ data }),
-    onSuccess: async (result: any, variables) => {
+    onSuccess: async (result: EndSessionResult, variables) => {
       if (result) {
         const m = endingSession;
         const bInfo = bankInfo
@@ -250,7 +283,7 @@ function Machines() {
         print(invoiceData, bInfo);
       }
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
 
   const handleConfirmPrintDone = async () => {
@@ -296,19 +329,19 @@ function Machines() {
     return () => clearInterval(t);
   }, []);
 
-  function getRemaining(m: any): number {
+  function getRemaining(m: Machine): number {
     if (m.status !== "in_use" || !m.remaining || !m.startedAt) return 0;
     const duration = parseTime(m.remaining);
     const elapsed = Math.floor((Date.now() - new Date(m.startedAt).getTime()) / 1000);
     return Math.max(0, duration - elapsed);
   }
 
-  function getPlayed(m: any): number {
+  function getPlayed(m: Machine): number {
     if (m.status !== "in_use" || !m.startedAt) return 0;
     return Math.floor((Date.now() - new Date(m.startedAt).getTime()) / 1000);
   }
 
-  const filtered = machines.filter((m: any) => filter === "all" || m.status === filter);
+  const filtered = machines.filter((m) => filter === "all" || m.status === filter);
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
@@ -336,7 +369,7 @@ function Machines() {
             <p className="text-sm text-muted-foreground">
               {t("machine.summary", {
                 total: machines.length,
-                inUse: machines.filter((m: any) => m.status === "in_use").length,
+                inUse: machines.filter((m) => m.status === "in_use").length,
               })}
             </p>
           </div>
@@ -385,7 +418,7 @@ function Machines() {
         {isLoading && <p className="text-sm text-muted-foreground">{t("common.loading")}</p>}
 
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" style={fadeIn(2)}>
-          {filtered.map((m: any) => {
+          {filtered.map((m) => {
             const s = statusMeta[m.status] ?? statusMeta.idle;
             const orders = machineOrders[m.name];
             return (
@@ -437,7 +470,7 @@ function Machines() {
                         <div className="text-[10px] text-muted-foreground font-medium">
                           Đồ ăn chờ thanh toán
                         </div>
-                        {orders.items.map((item: any, idx: number) => (
+                        {orders.items.map((item, idx: number) => (
                           <div key={idx} className="flex justify-between text-[11px]">
                             <span className="text-foreground truncate mr-2">
                               {item.qty}x {item.name}
@@ -582,17 +615,17 @@ function EndSessionDialog({
   onSkipPrint,
   getPlayed,
 }: {
-  machine: any;
+  machine: (Machine & { customerData?: { name?: string; phone?: string; tier?: string } }) | null;
   onClose: () => void;
   onClosePrint: () => void;
-  bankInfo: any;
+  bankInfo?: BankInfo;
   onConfirm: (method: "cash" | "qr", machineId: string) => void;
   isPending: boolean;
-  printReady: any;
+  printReady: PrintReady | null;
   onPrintDone: () => void;
   onRetryPrint: () => void;
   onSkipPrint: () => void;
-  getPlayed: (m: any) => number;
+  getPlayed: (m: Machine) => number;
 }) {
   const [method, setMethod] = useState<"cash" | "qr">("cash");
   const [showQR, setShowQR] = useState(false);
@@ -607,14 +640,15 @@ function EndSessionDialog({
 
   const hasSessionEndInvoice = useMemo(() => {
     if (!liveOrders) return false;
-    return liveOrders.some((o: any) => (o.items || []).some((item: any) => item.type === "time"));
+    return liveOrders.some((o) => (o.items || []).some((item) => item.type === "time"));
   }, [liveOrders]);
 
   const orders = useMemo(() => {
-    if (!liveOrders) return { items: [] as any[], foodItems: [] as any[], foodTotal: 0 };
-    const allItems = liveOrders.flatMap((o: any) => o.items || []);
-    const foodItems = allItems.filter((i: any) => i.type !== "time");
-    const foodTotal = foodItems.reduce((sum: number, i: any) => sum + i.price * i.qty, 0);
+    if (!liveOrders)
+      return { items: [] as InvoiceItem[], foodItems: [] as InvoiceItem[], foodTotal: 0 };
+    const allItems = liveOrders.flatMap((o) => o.items || []);
+    const foodItems = allItems.filter((i) => i.type !== "time");
+    const foodTotal = foodItems.reduce((sum: number, i) => sum + i.price * i.qty, 0);
     return { items: allItems, foodItems, foodTotal };
   }, [liveOrders]);
 
@@ -633,7 +667,7 @@ function EndSessionDialog({
   if (!machine) return null;
 
   const existingTimeItem = hasSessionEndInvoice
-    ? orders.items.find((i: any) => i.type === "time")
+    ? orders.items.find((i) => i.type === "time")
     : undefined;
   const timeCost = existingTimeItem
     ? existingTimeItem.price
@@ -672,7 +706,7 @@ function EndSessionDialog({
                 <>
                   <div className="border-t border-border pt-2">
                     <div className="text-xs text-muted-foreground mb-1">Chi tiết</div>
-                    {orders.foodItems.map((item: any, idx: number) => (
+                    {orders.foodItems.map((item, idx: number) => (
                       <div key={idx} className="flex justify-between text-sm">
                         <span className="text-foreground truncate mr-2">
                           {item.qty}x {item.name}
@@ -808,7 +842,7 @@ function MachineForm({
   loading,
 }: {
   title: string;
-  initial?: any;
+  initial?: Machine;
   onSubmit: (v: {
     name: string;
     area: string;
@@ -907,7 +941,7 @@ function AssignDialog({
   onAssign,
   loading,
 }: {
-  machine: any;
+  machine: Machine | null;
   onClose: () => void;
   onAssign: (hours: number) => void;
   loading?: boolean;

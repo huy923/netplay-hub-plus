@@ -37,5 +37,11 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "warn",
     },
   },
+  {
+    // Vendored shadcn/ui primitives intentionally co-locate cva variants,
+    // contexts and hooks with components; splitting them diverges from upstream.
+    files: ["src/components/ui/**/*.{ts,tsx}"],
+    rules: { "react-refresh/only-export-components": "off" },
+  },
   eslintPluginPrettier,
 );

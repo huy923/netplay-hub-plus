@@ -17,6 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { formatVND } from "@/lib/format";
+import type { Keyboard } from "@prisma/client";
 import {
   listKeyboards,
   createKeyboard,
@@ -131,7 +132,7 @@ function ImageUpload({
       onChange(url);
     } catch (e) {
       console.error(e);
-      toast.error(t("keyboard.uploadError") + ((e as any)?.message ?? t("common.unknown")));
+      toast.error(t("keyboard.uploadError") + ((e as Error)?.message ?? t("common.unknown")));
     }
     setUploading(false);
   };
@@ -235,7 +236,7 @@ function KeyboardForm({
       toast.success(edit ? t("common.updated") : t("common.added"));
       onClose();
     },
-    onError: (e: any) => toast.error(t("common.error") + (e.message ?? t("common.unknown"))),
+    onError: (e: Error) => toast.error(t("common.error") + (e.message ?? t("common.unknown"))),
   });
 
   return (
@@ -327,10 +328,10 @@ function Keyboards() {
   });
 
   const [filter, setFilter] = useState<"all" | KeyboardStatus>("all");
-  const list = keyboards.filter((kb: any) => filter === "all" || kb.status === filter);
+  const list = keyboards.filter((kb) => filter === "all" || kb.status === filter);
   const [addOpen, setAddOpen] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
-  const [rentKb, setRentKb] = useState<any>(null);
+  const [editing, setEditing] = useState<Keyboard | null>(null);
+  const [rentKb, setRentKb] = useState<Keyboard | null>(null);
 
   const { data: machines = [] } = useQuery({
     queryKey: ["machines"],
@@ -346,7 +347,7 @@ function Keyboards() {
       qc.invalidateQueries({ queryKey: ["keyboards"] });
       toast.success(t("common.deleted"));
     },
-    onError: (e: any) => toast.error(t("common.error") + (e.message ?? t("common.unknown"))),
+    onError: (e: Error) => toast.error(t("common.error") + (e.message ?? t("common.unknown"))),
   });
 
   return (
@@ -375,7 +376,7 @@ function Keyboards() {
             <p className="text-sm text-muted-foreground">
               {t("keyboard.summary", {
                 total: keyboards.length,
-                rented: keyboards.filter((k: any) => k.status === "rented").length,
+                rented: keyboards.filter((k) => k.status === "rented").length,
               })}
             </p>
           </div>
@@ -418,7 +419,7 @@ function Keyboards() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" style={fadeIn(2)}>
-          {list.map((kb: any) => {
+          {list.map((kb) => {
             const s = statusMeta[kb.status as KeyboardStatus] ?? {
               label: kb.status,
               tone: "primary",
@@ -605,7 +606,7 @@ function Keyboards() {
           </DialogHeader>
           <KeyboardForm
             key={editing?.id ?? "edit"}
-            edit={editing}
+            edit={editing ?? undefined}
             onClose={() => setEditing(null)}
           />
         </DialogContent>
@@ -617,17 +618,18 @@ function Keyboards() {
             <DialogTitle>{t("keyboard.selectMachine", { name: rentKb?.name })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 max-h-72 overflow-auto">
-            {machines.filter((m: any) => m.status === "in_use").length === 0 && (
+            {machines.filter((m) => m.status === "in_use").length === 0 && (
               <p className="text-muted-foreground text-sm text-center py-4">
                 {t("keyboard.noMachines")}
               </p>
             )}
             {machines
-              .filter((m: any) => m.status === "in_use")
-              .map((m: any) => (
+              .filter((m) => m.status === "in_use")
+              .map((m) => (
                 <button
                   key={m.id}
                   onClick={() => {
+                    if (!rentKb) return;
                     updateFn({ data: { id: rentKb.id, status: "rented", machineId: m.name } }).then(
                       () => {
                         qc.invalidateQueries({ queryKey: ["keyboards"] });

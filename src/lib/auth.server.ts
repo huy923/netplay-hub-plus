@@ -55,8 +55,7 @@ export async function signMachineToken(machineId: string): Promise<string> {
 }
 
 export type KioskAuth =
-  | { kind: "admin"; payload: Record<string, unknown> }
-  | { kind: "machine"; machineId: string };
+  { kind: "admin"; payload: Record<string, unknown> } | { kind: "machine"; machineId: string };
 
 export async function getKioskAuth(): Promise<KioskAuth | null> {
   const raw = getTokenFromCookie(COOKIE_NAME);

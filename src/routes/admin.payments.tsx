@@ -37,6 +37,8 @@ import {
 
 export const Route = createFileRoute("/admin/payments")({ component: Payments });
 
+type Payment = Awaited<ReturnType<typeof listPayments>>[number];
+
 function FloatingParticle({
   delay,
   size,
@@ -152,8 +154,7 @@ function Payments() {
   const [mounted, setMounted] = useState(false);
   const qc = useQueryClient();
   const [refundOpen, setRefundOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [refundTarget, setRefundTarget] = useState<Record<string, any> | null>(null);
+  const [refundTarget, setRefundTarget] = useState<Payment | null>(null);
   const [refundAmount, setRefundAmount] = useState(0);
   const [refundReason, setRefundReason] = useState("");
 
@@ -240,7 +241,7 @@ function Payments() {
     ].join("-");
   })();
 
-  const todayPayments = payments.filter((p: any) => {
+  const todayPayments = payments.filter((p) => {
     if (!p.createdAt) return false;
     const d = new Date(p.createdAt);
     const s = [
@@ -251,12 +252,12 @@ function Payments() {
     return s === todayStr && p.status === "success";
   });
 
-  const totalRevenueToday = todayPayments.reduce((s: number, p: any) => s + p.amount, 0);
-  const pendingCount = payments.filter((p: any) => p.status === "pending").length;
-  const refundedCount = payments.filter((p: any) => p.status === "refunded").length;
+  const totalRevenueToday = todayPayments.reduce((s, p) => s + p.amount, 0);
+  const pendingCount = payments.filter((p) => p.status === "pending").length;
+  const refundedCount = payments.filter((p) => p.status === "refunded").length;
   const totalTransactions = transactions.length;
 
-  const unreadNotifications = notifications.filter((n: any) => !n.read);
+  const unreadNotifications = notifications.filter((n) => !n.read);
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
@@ -368,14 +369,14 @@ function Payments() {
                       </tr>
                     </thead>
                     <tbody>
-                      {payments.map((payment: any) => {
+                      {payments.map((payment) => {
                         const expected = payment.amount;
                         const received =
                           payment.status === "success" ||
                           payment.status === "partial" ||
                           payment.status === "overpaid"
                             ? payment.amount +
-                              (payment.refunds?.reduce((s: number, r: any) => s - r.amount, 0) ?? 0)
+                              (payment.refunds?.reduce((s, r) => s - r.amount, 0) ?? 0)
                             : payment.amount;
                         const diff =
                           payment.status === "success"
@@ -534,7 +535,7 @@ function Payments() {
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
-                  {notifications.map((notif: any) => (
+                  {notifications.map((notif) => (
                     <button
                       key={notif.id}
                       onClick={() => {

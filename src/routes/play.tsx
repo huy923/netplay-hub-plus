@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import type { Combo, Invoice, InvoiceItem, Machine, MenuItem } from "@prisma/client";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -42,7 +43,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import QRPaymentDialog from "@/components/payment/qr-payment";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/components/theme-context";
 import { Moon, Sun, Monitor as MonitorIcon } from "lucide-react";
 
 export const Route = createFileRoute("/play")({ component: PlayerHome });
@@ -152,7 +153,7 @@ function PlayerHome() {
   }, [machine?.customer, getCustomerFn]);
 
   const isVIP = custObj?.tier === "VIP";
-  const vipOf = (base: number) => (isVIP ? Math.round(base * 0.1) : 0);
+  const vipOf = useCallback((base: number) => (isVIP ? Math.round(base * 0.1) : 0), [isVIP]);
   const vipDiscount = vipOf(foodAmount);
 
   const [remaining, setRemaining] = useState(0);
@@ -174,7 +175,7 @@ function PlayerHome() {
   useEffect(() => {
     if (!machine?.id) return;
     issueKioskTokenFn({ data: { machineId: machine.id } }).catch(() => {});
-  }, [machine?.id]);
+  }, [machine?.id, issueKioskTokenFn]);
 
   useEffect(() => {
     if (!machine) return;
@@ -220,7 +221,7 @@ function PlayerHome() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [machine, remaining > 0, foodAmount, foodItems, vipOf]);
+  }, [machine, remaining, foodAmount, foodItems, vipOf]);
 
   useEffect(() => {
     if (!machine || machine.status !== "in_use" || !machine.startedAt) return;
@@ -228,7 +229,7 @@ function PlayerHome() {
     const billedHours = Math.ceil(Math.max(0, el) / 3600);
     const timeCost = billedHours * machine.pricePerHour;
     setSessionAmount(timeCost + foodAmount - vipOf(timeCost + foodAmount));
-  }, [machine, remaining, foodAmount, vipDiscount]);
+  }, [machine, remaining, foodAmount, vipOf]);
 
   const hh = String(Math.floor(remaining / 3600)).padStart(2, "0");
   const mm = String(Math.floor((remaining % 3600) / 60)).padStart(2, "0");
@@ -322,8 +323,8 @@ function PlayerHome() {
     if (!machine) return;
     try {
       await updateOrderStatusFn({ data: { id, status: "Đã hủy" } });
-    } catch (e: any) {
-      toast.error(e?.message ?? t("common.error"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
       return;
     }
     if (seconds > 0) {
@@ -745,7 +746,7 @@ function HomeTab({
   onTab,
 }: {
   mounted: boolean;
-  machine: any;
+  machine: Machine;
   remaining: number;
   onTab: (t: Tab) => void;
 }) {
@@ -955,7 +956,7 @@ function FoodTab({
   machineName,
   onOrderSuccess,
 }: {
-  menu: any[];
+  menu: MenuItem[];
   cart: Record<string, number>;
   setCart: (c: Record<string, number>) => void;
   machineName: string;
@@ -975,7 +976,7 @@ function FoodTab({
   });
 
   const pendingOrders = activeOrders.filter(
-    (o: any) =>
+    (o) =>
       o.status === "Chờ" ||
       o.status === "Chờ xử lý" ||
       o.status === "Đang chuẩn bị" ||
@@ -988,7 +989,7 @@ function FoodTab({
     return () => clearInterval(iv);
   }, []);
 
-  const cancelLeft = (order: any) => {
+  const cancelLeft = (order: Invoice) => {
     if (!order.createdAt) return 0;
     return Math.max(0, Math.ceil(30 - (now - new Date(order.createdAt).getTime()) / 1000));
   };
@@ -1036,8 +1037,8 @@ function FoodTab({
       await cancelOrderFn({ data: { id: orderId, status: "Đã hủy" } });
       toast.success(t("play.orderCancelled"));
       refetchOrders();
-    } catch (e: any) {
-      toast.error(e?.message ?? t("common.error"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("common.error"));
     }
   };
 
@@ -1238,7 +1239,7 @@ function FoodTab({
               </span>
             </h3>
             <div className="space-y-3 max-h-80 overflow-auto scrollbar-thin">
-              {pendingOrders.map((order: any) => (
+              {pendingOrders.map((order) => (
                 <div key={order.id} className="border border-border rounded-xl p-3 bg-muted/30">
                   <div className="flex items-center justify-between mb-2">
                     <span
@@ -1257,7 +1258,7 @@ function FoodTab({
                     </span>
                   </div>
                   <div className="space-y-1 mb-2">
-                    {order.items.map((item: any, idx: number) => (
+                    {order.items.map((item, idx: number) => (
                       <div key={idx} className="flex justify-between text-sm">
                         <span className="text-foreground">
                           {item.qty}× {item.name}
@@ -1319,9 +1320,9 @@ function ExtendTab({
     queryFn: () => listCombos(),
   });
 
-  const packs = combos.map((c: any) => {
+  const packs = combos.map((c) => {
     const comboItems = (c.items ?? [])
-      .map((ci: any) => `${ci.menuItem?.name ?? ""} ×${ci.qty}`)
+      .map((ci) => `${ci.menuItem?.name ?? ""} ×${ci.qty}`)
       .join(", ");
     return {
       id: c.id,
@@ -1686,7 +1687,7 @@ function PayTab({
   onCallStaff,
   onPayCounter,
 }: {
-  machine: any;
+  machine: Machine;
   remaining: number;
   sessionAmount: number;
   foodAmount: number;
@@ -1800,7 +1801,7 @@ function PayTab({
   );
 }
 
-function AccountTab({ machine }: { machine: any }) {
+function AccountTab({ machine }: { machine: Machine }) {
   const { t } = useTranslation();
   return (
     <div className="grid lg:grid-cols-[320px_1fr] gap-6">

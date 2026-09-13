@@ -50,6 +50,12 @@ import {
 export const Route = createFileRoute("/admin/menu")({ component: Menu });
 
 type MenuTab = "all" | "items" | "combos";
+type MenuItem = Awaited<ReturnType<typeof listMenu>>[number];
+type Combo = Awaited<ReturnType<typeof listCombos>>[number];
+type CreateMenuItemInput = Parameters<typeof createMenuItem>[0]["data"];
+type UpdateMenuItemInput = Parameters<typeof updateMenuItem>[0]["data"];
+type CreateComboInput = Parameters<typeof createCombo>[0]["data"];
+type UpdateComboInput = Parameters<typeof updateCombo>[0]["data"];
 
 function FloatingParticle({
   delay,
@@ -103,20 +109,20 @@ function Menu() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["menu"] });
 
   const createM = useMutation({
-    mutationFn: (data: any) => create({ data }),
+    mutationFn: (data: CreateMenuItemInput) => create({ data }),
     onSuccess: () => {
       toast.success(t("menuPage.addSuccess"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
   const updateM = useMutation({
-    mutationFn: (data: any) => update({ data }),
+    mutationFn: (data: UpdateMenuItemInput) => update({ data }),
     onSuccess: () => {
       toast.success(t("menuPage.updateSuccess"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
   const deleteM = useMutation({
     mutationFn: (id: string) => remove({ data: { id } }),
@@ -124,7 +130,7 @@ function Menu() {
       toast.success(t("menuPage.deleteSuccess"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
   const stockM = useMutation({
     mutationFn: (v: { id: string; amount: number }) => stock({ data: v }),
@@ -132,11 +138,11 @@ function Menu() {
       toast.success(t("menuPage.stockAddSuccess"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
 
   const [openAdd, setOpenAdd] = useState(false);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<MenuItem | null>(null);
 
   const listC = useServerFn(listCombos);
   const createC = useServerFn(createCombo);
@@ -147,20 +153,20 @@ function Menu() {
   const invalidateCombos = () => qc.invalidateQueries({ queryKey: ["combos"] });
 
   const createComboM = useMutation({
-    mutationFn: (data: any) => createC({ data }),
+    mutationFn: (data: CreateComboInput) => createC({ data }),
     onSuccess: () => {
       toast.success(t("menuPage.comboAddSuccess"));
       invalidateCombos();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
   const updateComboM = useMutation({
-    mutationFn: (data: any) => updateC({ data }),
+    mutationFn: (data: UpdateComboInput) => updateC({ data }),
     onSuccess: () => {
       toast.success(t("menuPage.comboUpdateSuccess"));
       invalidateCombos();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
   const deleteComboM = useMutation({
     mutationFn: (id: string) => removeC({ data: { id } }),
@@ -168,13 +174,13 @@ function Menu() {
       toast.success(t("menuPage.comboDeleteSuccess"));
       invalidateCombos();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e) => toast.error(e?.message ?? t("common.error")),
   });
 
   const [openComboAdd, setOpenComboAdd] = useState(false);
   const [comboAddKey, setComboAddKey] = useState(0);
   const [menuAddKey, setMenuAddKey] = useState(0);
-  const [editingCombo, setEditingCombo] = useState<any | null>(null);
+  const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
@@ -212,7 +218,7 @@ function Menu() {
             }`}
           >
             {t("menuPage.tabAll", {
-              count: menu.filter((m: any) => m.category !== "Combo").length + combos.length,
+              count: menu.filter((m) => m.category !== "Combo").length + combos.length,
             })}
           </button>
           <button
@@ -224,7 +230,7 @@ function Menu() {
             }`}
           >
             {t("menuPage.tabItems", {
-              count: menu.filter((m: any) => m.category !== "Combo").length,
+              count: menu.filter((m) => m.category !== "Combo").length,
             })}
           </button>
           <button
@@ -287,8 +293,8 @@ function Menu() {
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" style={fadeIn(1)}>
               {menu
-                .filter((m: any) => m.category !== "Combo")
-                .map((m: any) => (
+                .filter((m) => m.category !== "Combo")
+                .map((m) => (
                   <Card
                     key={m.id}
                     className="p-4 flex flex-col border border-border bg-card/80 backdrop-blur-xl hover:border-border hover:bg-card transition-all duration-300 group"
@@ -362,7 +368,7 @@ function Menu() {
                     </div>
                   </Card>
                 ))}
-              {combos.map((c: any) => (
+              {combos.map((c) => (
                 <Card
                   key={c.id}
                   className="p-4 flex flex-col border border-border bg-card/80 backdrop-blur-xl hover:border-border hover:bg-card transition-all duration-300 group"
@@ -390,7 +396,7 @@ function Menu() {
                   </div>
                   <div className="mt-3 font-semibold text-lg text-foreground">{c.name}</div>
                   <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-1">
-                    {c.items?.map((ci: any) => (
+                    {c.items?.map((ci) => (
                       <span
                         key={ci.id}
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted border border-border"
@@ -488,7 +494,7 @@ function Menu() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" style={fadeIn(1)}>
               {menu
                 .filter((m) => m.category !== "Combo")
-                .map((m: any) => (
+                .map((m) => (
                   <Card
                     key={m.id}
                     className="p-4 flex flex-col border border-border bg-card/80 backdrop-blur-xl hover:border-border hover:bg-card transition-all duration-300 group"
@@ -598,7 +604,7 @@ function Menu() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" style={fadeIn(1)}>
-              {combos.map((c: any) => (
+              {combos.map((c) => (
                 <Card
                   key={c.id}
                   className="p-4 flex flex-col border border-border bg-card/80 backdrop-blur-xl hover:border-border hover:bg-card transition-all duration-300 group"
@@ -619,7 +625,7 @@ function Menu() {
                   </div>
                   <div className="mt-3 font-semibold text-lg text-foreground">{c.name}</div>
                   <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-1">
-                    {c.items?.map((ci: any) => (
+                    {c.items?.map((ci) => (
                       <span
                         key={ci.id}
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted border border-border"
@@ -703,12 +709,12 @@ function MenuForm({
   loading,
 }: {
   title: string;
-  initial?: any;
+  initial?: MenuItem;
   onSubmit: (v: {
     name: string;
     category: string;
-    price: string;
-    image: string;
+    price: number;
+    image: string | null;
     stock: number;
   }) => void;
   loading?: boolean;
@@ -853,7 +859,7 @@ function ImageUpload({
     } catch (e) {
       console.error(e);
       toast.error(
-        t("menuPage.imageUploadError", { message: (e as any)?.message ?? t("common.error") }),
+        t("menuPage.imageUploadError", { message: (e as Error)?.message ?? t("common.error") }),
       );
     }
     setUploading(false);
@@ -935,8 +941,8 @@ function ComboForm({
   loading,
 }: {
   title?: string;
-  initial?: any;
-  menuItems: any[];
+  initial?: Combo;
+  menuItems: MenuItem[];
   onSubmit: (v: {
     name: string;
     price: number;
@@ -954,8 +960,7 @@ function ComboForm({
   const [image, setImage] = useState(initial?.image ?? null);
   const [search, setSearch] = useState("");
   const [selectedItems, setSelectedItems] = useState<{ menuItemId: string; qty: number }[]>(
-    initial?.items?.map((i: any) => ({ menuItemId: i.menuItem?.id ?? i.menuItemId, qty: i.qty })) ??
-      [],
+    initial?.items?.map((i) => ({ menuItemId: i.menuItem?.id ?? i.menuItemId, qty: i.qty })) ?? [],
   );
 
   const available = menuItems.filter((m) => m.category !== "Combo");
@@ -1038,7 +1043,7 @@ function ComboForm({
             {filtered.length === 0 && (
               <p className="text-xs text-muted-foreground p-2">{t("menuPage.noItemsFound")}</p>
             )}
-            {filtered.map((m: any) => {
+            {filtered.map((m) => {
               const sel = selectedItems.find((s) => s.menuItemId === m.id);
               return (
                 <div

@@ -36,6 +36,9 @@ export const Route = createFileRoute("/admin/purchase-orders")({
   component: PurchaseOrders,
 });
 
+type MenuItem = Awaited<ReturnType<typeof listMenu>>[number];
+type CreatePurchaseOrderInput = Parameters<typeof createPurchaseOrder>[0]["data"];
+
 function FloatingParticle({
   delay,
   size,
@@ -97,12 +100,12 @@ function PurchaseOrders() {
   };
 
   const createM = useMutation({
-    mutationFn: (data: any) => createPO({ data }),
+    mutationFn: (data: CreatePurchaseOrderInput) => createPO({ data }),
     onSuccess: () => {
       toast.success(t("purchaseOrder.addSuccess"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
 
   const deleteM = useMutation({
@@ -111,20 +114,20 @@ function PurchaseOrders() {
       toast.success(t("common.deleted"));
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? t("common.error")),
+    onError: (e: Error) => toast.error(e.message ?? t("common.error")),
   });
 
   const [openAdd, setOpenAdd] = useState(false);
   const [search, setSearch] = useState("");
 
   const filtered = orders.filter(
-    (o: any) =>
+    (o) =>
       !search ||
       o.itemName.toLowerCase().includes(search.toLowerCase()) ||
       o.supplier?.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const itemsForSelect = menu.filter((m: any) => m.category !== "Combo");
+  const itemsForSelect = menu.filter((m) => m.category !== "Combo");
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
@@ -205,7 +208,7 @@ function PurchaseOrders() {
                     </td>
                   </tr>
                 )}
-                {filtered.map((po: any) => (
+                {filtered.map((po) => (
                   <tr
                     key={po.id}
                     className="border-b border-border/50 last:border-0 hover:bg-muted/50"
@@ -257,7 +260,7 @@ function POForm({
   onSubmit,
   loading,
 }: {
-  items: any[];
+  items: MenuItem[];
   onSubmit: (v: {
     itemId: string;
     qty: number;
@@ -289,7 +292,7 @@ function POForm({
               <SelectValue placeholder={t("purchaseOrder.selectItem")} />
             </SelectTrigger>
             <SelectContent className="border-border bg-background text-foreground">
-              {items.map((m: any) => (
+              {items.map((m) => (
                 <SelectItem key={m.id} value={m.id}>
                   {m.name} ({formatVND(m.price)})
                 </SelectItem>

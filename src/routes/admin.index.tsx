@@ -54,16 +54,16 @@ function Dashboard() {
   const { data: machines = [] } = useQuery({ queryKey: ["machines"], queryFn: () => lm() });
   const { data: invoices = [] } = useQuery({ queryKey: ["invoices"], queryFn: () => li() });
 
-  const inUse = machines.filter((m: any) => m.status === "in_use").length;
-  const idle = machines.filter((m: any) => m.status === "idle").length;
-  const maint = machines.filter((m: any) => m.status === "maintenance").length;
+  const inUse = machines.filter((m) => m.status === "in_use").length;
+  const idle = machines.filter((m) => m.status === "idle").length;
+  const maint = machines.filter((m) => m.status === "maintenance").length;
   const todayLocal = new Date();
   const todayStr = [
     todayLocal.getFullYear(),
     String(todayLocal.getMonth() + 1).padStart(2, "0"),
     String(todayLocal.getDate()).padStart(2, "0"),
   ].join("-");
-  const todayInvoices = invoices.filter((i: any) => {
+  const todayInvoices = invoices.filter((i) => {
     if (!i.createdAt) return false;
     const d = new Date(i.createdAt);
     const invStr = [
@@ -74,8 +74,8 @@ function Dashboard() {
     return invStr === todayStr;
   });
   const revenue = todayInvoices
-    .filter((i: any) => i.status === "Đã thanh toán")
-    .reduce((s: number, i: any) => s + i.amount, 0);
+    .filter((i) => i.status === "Đã thanh toán")
+    .reduce((s, i) => s + i.amount, 0);
 
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -199,7 +199,7 @@ function Dashboard() {
                       </td>
                     </tr>
                   )}
-                  {todayInvoices.map((i: any) => (
+                  {todayInvoices.map((i) => (
                     <tr
                       key={i.id}
                       className="border-b border-border/50 last:border-0 hover:bg-muted/50"

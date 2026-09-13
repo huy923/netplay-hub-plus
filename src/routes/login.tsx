@@ -35,7 +35,7 @@ function Login() {
     currentUser().then((u) => {
       if (u) nav({ to: "/admin" });
     });
-  }, []);
+  }, [currentUser, nav]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
