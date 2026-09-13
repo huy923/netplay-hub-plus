@@ -19,7 +19,7 @@ export const getSettings = createServerFn({ method: "GET" }).handler(async () =>
 });
 
 export const updateSettings = createServerFn({ method: "POST" })
-  .inputValidator(z.record(z.string(), z.string()))
+  .validator(z.record(z.string(), z.string()))
   .handler(async ({ data }: { data: Record<string, string> }) => {
     await requireAdmin();
     for (const [key, value] of Object.entries(data)) {
@@ -44,7 +44,7 @@ export const updateSettings = createServerFn({ method: "POST" })
   });
 
 export const changeAdminPassword = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       currentPassword: z.string().min(1),
       newPassword: z.string().min(6),
@@ -77,7 +77,7 @@ export const changeAdminPassword = createServerFn({ method: "POST" })
   });
 
 export const verifySettingsPassword = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ password: z.string().min(1) }))
+  .validator(z.object({ password: z.string().min(1) }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const map = await getDecryptedSettings();

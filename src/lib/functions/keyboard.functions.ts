@@ -10,7 +10,7 @@ export const listKeyboards = createServerFn({ method: "GET" }).handler(async () 
 });
 
 export const createKeyboard = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       name: z.string().min(1),
       brand: z.string().min(1),
@@ -25,7 +25,7 @@ export const createKeyboard = createServerFn({ method: "POST" })
   });
 
 export const updateKeyboard = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       id: z.string(),
       name: z.string().optional(),
@@ -47,7 +47,7 @@ export const updateKeyboard = createServerFn({ method: "POST" })
   });
 
 export const deleteKeyboard = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const kb = await prisma.keyboard.findUnique({ where: { id: data.id } });
@@ -56,7 +56,7 @@ export const deleteKeyboard = createServerFn({ method: "POST" })
   });
 
 export const rentKeyboard = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string(), machineId: z.string() }))
+  .validator(z.object({ id: z.string(), machineId: z.string() }))
   .handler(async ({ data }) => {
     const auth = await requireKioskOrAdmin();
     if (auth.kind === "machine" && auth.machineId !== data.machineId)
@@ -68,7 +68,7 @@ export const rentKeyboard = createServerFn({ method: "POST" })
   });
 
 export const returnKeyboard = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     const auth = await requireKioskOrAdmin();
     const kb = await prisma.keyboard.findUnique({ where: { id: data.id } });
@@ -81,7 +81,7 @@ export const returnKeyboard = createServerFn({ method: "POST" })
   });
 
 export const getRentedKeyboardsByMachine = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ machineName: z.string() }))
+  .validator(z.object({ machineName: z.string() }))
   .handler(async ({ data }) => {
     const auth = await requireKioskOrAdmin();
     if (auth.kind === "machine") {

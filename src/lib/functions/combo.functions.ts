@@ -13,7 +13,7 @@ export const listCombos = createServerFn({ method: "GET" }).handler(async () => 
 });
 
 export const createCombo = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       name: z.string().min(1),
       price: z.number().int().min(0),
@@ -32,7 +32,7 @@ export const createCombo = createServerFn({ method: "POST" })
   });
 
 export const updateCombo = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       id: z.string(),
       name: z.string().min(1).optional(),
@@ -64,7 +64,7 @@ export const updateCombo = createServerFn({ method: "POST" })
   });
 
 export const deleteCombo = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const combo = await prisma.combo.findUnique({ where: { id: data.id } });

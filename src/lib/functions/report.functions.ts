@@ -24,7 +24,7 @@ export const getSalesReport = createServerFn({ method: "GET" }).handler(async ()
 });
 
 export const getDailyReport = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ days: z.number().int().default(30) }))
+  .validator(z.object({ days: z.number().int().default(30) }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const since = new Date();

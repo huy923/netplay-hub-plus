@@ -23,7 +23,7 @@ export const listMachines = createServerFn({ method: "GET" }).handler(async () =
 });
 
 export const createMachine = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       name: z.string().min(1),
       area: z.string().min(1),
@@ -40,7 +40,7 @@ export const createMachine = createServerFn({ method: "POST" })
   });
 
 export const updateMachine = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       id: z.string(),
       name: z.string().optional(),
@@ -94,7 +94,7 @@ export const updateMachine = createServerFn({ method: "POST" })
   });
 
 export const deleteMachine = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const result = await prisma.machine.delete({ where: { id: data.id } });
@@ -103,7 +103,7 @@ export const deleteMachine = createServerFn({ method: "POST" })
   });
 
 export const getLastMachineSessionByCustomer = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ customer: z.string() }))
+  .validator(z.object({ customer: z.string() }))
   .handler(async ({ data }) => {
     return prisma.machineSession.findFirst({
       where: { customerName: data.customer },
@@ -112,7 +112,7 @@ export const getLastMachineSessionByCustomer = createServerFn({ method: "GET" })
   });
 
 export const getMachineSessions = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ machineId: z.string() }))
+  .validator(z.object({ machineId: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.machineSession.findMany({
@@ -123,7 +123,7 @@ export const getMachineSessions = createServerFn({ method: "GET" })
   });
 
 export const endMachineSession = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       machineId: z.string(),
       paymentMethod: z.enum(["cash", "qr"]),
@@ -437,7 +437,7 @@ export const endMachineSession = createServerFn({ method: "POST" })
   });
 
 export const confirmEndSessionIdle = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       machineId: z.string(),
       paymentId: z.string(),

@@ -10,7 +10,7 @@ export const listDiscounts = createServerFn({ method: "GET" }).handler(async () 
 });
 
 export const createDiscount = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       code: z.string().min(1),
       name: z.string().default("percent"),
@@ -37,7 +37,7 @@ export const createDiscount = createServerFn({ method: "POST" })
   });
 
 export const updateDiscount = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       id: z.string(),
       name: z.string().optional(),
@@ -56,14 +56,14 @@ export const updateDiscount = createServerFn({ method: "POST" })
   });
 
 export const deleteDiscount = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.discount.delete({ where: { id: data.id } });
   });
 
 export const validateDiscount = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ code: z.string(), amount: z.number().int() }))
+  .validator(z.object({ code: z.string(), amount: z.number().int() }))
   .handler(async ({ data }) => {
     const discount = await prisma.discount.findUnique({ where: { code: data.code } });
     if (!discount) return { valid: false, message: "Mã giảm giá không tồn tại" };
@@ -85,7 +85,7 @@ export const validateDiscount = createServerFn({ method: "POST" })
   });
 
 export const refundInvoice = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string(), reason: z.string().default("Hoàn trả hóa đơn") }))
+  .validator(z.object({ id: z.string(), reason: z.string().default("Hoàn trả hóa đơn") }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const invoice = await prisma.invoice.findUnique({ where: { id: data.id } });

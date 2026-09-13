@@ -11,7 +11,7 @@ export const listCustomers = createServerFn({ method: "GET" }).handler(async () 
 });
 
 export const getCustomerByName = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ name: z.string() }))
+  .validator(z.object({ name: z.string() }))
   .handler(async ({ data }) => {
     const customer = await prisma.customer.findFirst({ where: { name: data.name } });
     if (!customer) return null;
@@ -20,7 +20,7 @@ export const getCustomerByName = createServerFn({ method: "GET" })
   });
 
 export const createCustomer = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       name: z.string().min(1),
       phone: z.string().min(1),
@@ -37,7 +37,7 @@ export const createCustomer = createServerFn({ method: "POST" })
   });
 
 export const updateCustomer = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       id: z.string(),
       name: z.string().optional(),
@@ -57,7 +57,7 @@ export const updateCustomer = createServerFn({ method: "POST" })
   });
 
 export const deleteCustomer = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const result = await prisma.customer.delete({ where: { id: data.id } });
@@ -66,7 +66,7 @@ export const deleteCustomer = createServerFn({ method: "POST" })
   });
 
 export const earnLoyaltyPoints = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       customerId: z.string(),
       points: z.number().int().min(1),
@@ -90,7 +90,7 @@ export const earnLoyaltyPoints = createServerFn({ method: "POST" })
   });
 
 export const burnLoyaltyPoints = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       customerId: z.string(),
       points: z.number().int().min(1),
@@ -116,7 +116,7 @@ export const burnLoyaltyPoints = createServerFn({ method: "POST" })
   });
 
 export const getLoyaltyTransactions = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ customerId: z.string() }))
+  .validator(z.object({ customerId: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.loyaltyTransaction.findMany({
@@ -127,7 +127,7 @@ export const getLoyaltyTransactions = createServerFn({ method: "GET" })
   });
 
 export const createCursingRequest = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ machine: z.string(), customer: z.string() }))
+  .validator(z.object({ machine: z.string(), customer: z.string() }))
   .handler(async ({ data }) => {
     const req = await prisma.cursingRequest.create({
       data: { machine: data.machine, customer: data.customer, price: 10000 },
@@ -153,7 +153,7 @@ export const listCursingRequests = createServerFn({ method: "GET" }).handler(asy
 });
 
 export const completeCursingRequest = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const result = await prisma.cursingRequest.update({

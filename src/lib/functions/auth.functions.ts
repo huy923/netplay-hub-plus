@@ -15,7 +15,7 @@ import {
 import { getClientIP, isLocalIP } from "./_shared";
 
 export const loginUser = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ username: z.string().min(1), password: z.string().min(1) }))
+  .validator(z.object({ username: z.string().min(1), password: z.string().min(1) }))
   .handler(async ({ data }) => {
     const ip = getClientIP();
     const recentFails = await prisma.loginAttempt.count({
@@ -93,7 +93,7 @@ export const logoutUser = createServerFn({ method: "POST" }).handler(async () =>
 });
 
 export const issueKioskToken = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ machineId: z.string().min(1) }))
+  .validator(z.object({ machineId: z.string().min(1) }))
   .handler(async ({ data }) => {
     const machine = await prisma.machine.findUnique({
       where: { id: data.machineId },

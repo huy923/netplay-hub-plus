@@ -10,7 +10,7 @@ export const listMenu = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const createMenuItem = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       name: z.string().min(1),
       category: z.string().min(1),
@@ -29,7 +29,7 @@ export const createMenuItem = createServerFn({ method: "POST" })
   });
 
 export const updateMenuItem = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       id: z.string(),
       name: z.string().optional(),
@@ -54,7 +54,7 @@ export const updateMenuItem = createServerFn({ method: "POST" })
   });
 
 export const addStock = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string(), amount: z.number().int() }))
+  .validator(z.object({ id: z.string(), amount: z.number().int() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const result = await prisma.menuItem.update({
@@ -66,7 +66,7 @@ export const addStock = createServerFn({ method: "POST" })
   });
 
 export const deleteMenuItem = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const item = await prisma.menuItem.findUnique({ where: { id: data.id } });
@@ -88,7 +88,7 @@ export const getOutOfStockItems = createServerFn({ method: "GET" }).handler(asyn
 });
 
 export const createPurchaseOrder = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       itemId: z.string(),
       qty: z.number().int().min(1),
@@ -133,7 +133,7 @@ export const listPurchaseOrders = createServerFn({ method: "GET" }).handler(asyn
 });
 
 export const deletePurchaseOrder = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const po = await prisma.purchaseOrder.findUnique({ where: { id: data.id } });

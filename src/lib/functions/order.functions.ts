@@ -5,7 +5,7 @@ import { broadcast } from "@/lib/sse-events.server";
 import { requireKioskOrAdmin } from "@/lib/auth.server";
 
 export const createFoodOrder = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       machineName: z.string().min(1),
       items: z.array(
@@ -122,7 +122,7 @@ export const createFoodOrder = createServerFn({ method: "POST" })
   });
 
 export const getOrdersByMachine = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ machineName: z.string() }))
+  .validator(z.object({ machineName: z.string() }))
   .handler(async ({ data }) => {
     const auth = await requireKioskOrAdmin();
     if (auth.kind === "machine") {
@@ -141,7 +141,7 @@ export const getOrdersByMachine = createServerFn({ method: "GET" })
   });
 
 export const updateOrderStatus = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string(), status: z.string() }))
+  .validator(z.object({ id: z.string(), status: z.string() }))
   .handler(async ({ data }) => {
     const auth = await requireKioskOrAdmin();
     const invoice = await prisma.invoice.findUnique({ where: { id: data.id } });

@@ -16,7 +16,7 @@ export const listUsers = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const createUser = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       username: z.string().min(1),
       password: z.string().min(1),
@@ -34,7 +34,7 @@ export const createUser = createServerFn({ method: "POST" })
   });
 
 export const updateUser = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       id: z.string(),
       username: z.string().optional(),
@@ -55,7 +55,7 @@ export const updateUser = createServerFn({ method: "POST" })
   });
 
 export const deleteUser = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     await prisma.user.delete({ where: { id: data.id } });

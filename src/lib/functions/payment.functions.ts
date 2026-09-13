@@ -28,7 +28,7 @@ export const getPublicBankSettings = createServerFn({ method: "GET" }).handler(a
 });
 
 export const findPendingPayment = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ machine: z.string() }))
+  .validator(z.object({ machine: z.string() }))
   .handler(async ({ data }) => {
     const invoice = await prisma.invoice.findFirst({
       where: { machine: data.machine, status: "Chờ" },
@@ -44,7 +44,7 @@ export const findPendingPayment = createServerFn({ method: "GET" })
   });
 
 export const createPayment = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       invoiceId: z.string().optional(),
       amount: z.number().int().min(1000),
@@ -121,7 +121,7 @@ export const createPayment = createServerFn({ method: "POST" })
   });
 
 export const confirmPayment = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       paymentId: z.string(),
       receivedAmount: z.number().int().min(0),
@@ -204,7 +204,7 @@ export const confirmPayment = createServerFn({ method: "POST" })
   });
 
 export const refundPayment = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       paymentId: z.string(),
       amount: z.number().int().min(1),
@@ -270,7 +270,7 @@ export const listPayments = createServerFn({ method: "GET" }).handler(async () =
 });
 
 export const listTransactions = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ limit: z.number().int().default(50) }))
+  .validator(z.object({ limit: z.number().int().default(50) }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.transaction.findMany({
@@ -280,7 +280,7 @@ export const listTransactions = createServerFn({ method: "GET" })
   });
 
 export const createNotification = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       type: z.string(),
       title: z.string(),
@@ -303,7 +303,7 @@ export const createNotification = createServerFn({ method: "POST" })
   });
 
 export const listNotifications = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ limit: z.number().int().default(50) }))
+  .validator(z.object({ limit: z.number().int().default(50) }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.notification.findMany({
@@ -313,14 +313,14 @@ export const listNotifications = createServerFn({ method: "GET" })
   });
 
 export const markNotificationRead = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.notification.update({ where: { id: data.id }, data: { read: true } });
   });
 
 export const getInvoicePayments = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ invoiceId: z.string() }))
+  .validator(z.object({ invoiceId: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.payment.findMany({
@@ -331,7 +331,7 @@ export const getInvoicePayments = createServerFn({ method: "GET" })
   });
 
 export const generateQRCode = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ amount: z.number().int(), note: z.string().optional() }))
+  .validator(z.object({ amount: z.number().int(), note: z.string().optional() }))
   .handler(async ({ data }) => {
     const map = await getDecryptedSettings();
 
@@ -352,7 +352,7 @@ export const generateQRCode = createServerFn({ method: "GET" })
   });
 
 export const lookupBankAccount = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ bin: z.string(), accountNumber: z.string() }))
+  .validator(z.object({ bin: z.string(), accountNumber: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const { bin, accountNumber } = data;
@@ -385,7 +385,7 @@ export const lookupBankAccount = createServerFn({ method: "POST" })
   });
 
 export const claimInvoice = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ invoiceId: z.string(), staffName: z.string() }))
+  .validator(z.object({ invoiceId: z.string(), staffName: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const existing = await prisma.invoice.findUnique({ where: { id: data.invoiceId } });
@@ -432,7 +432,7 @@ export const listStaffRequests = createServerFn({ method: "GET" }).handler(async
 });
 
 export const getStaffRequestById = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ invoiceId: z.string() }))
+  .validator(z.object({ invoiceId: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.invoice.findUnique({ where: { id: data.invoiceId } });

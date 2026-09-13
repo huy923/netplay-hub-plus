@@ -26,7 +26,7 @@ export const getAllPendingFoodOrders = createServerFn({ method: "GET" }).handler
 });
 
 export const getInvoiceById = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.invoice.findUnique({
@@ -36,7 +36,7 @@ export const getInvoiceById = createServerFn({ method: "GET" })
   });
 
 export const getInvoicesByCustomer = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ customer: z.string() }))
+  .validator(z.object({ customer: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.invoice.findMany({
@@ -47,14 +47,14 @@ export const getInvoicesByCustomer = createServerFn({ method: "GET" })
   });
 
 export const getMachineByCustomerName = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ name: z.string() }))
+  .validator(z.object({ name: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.machine.findFirst({ where: { customer: data.name } });
   });
 
 export const getCustomerById = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ id: z.string() }))
+  .validator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     const customer = await prisma.customer.findUnique({ where: { id: data.id } });
@@ -64,7 +64,7 @@ export const getCustomerById = createServerFn({ method: "GET" })
   });
 
 export const createInvoice = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       machine: z.string(),
       customer: z.string(),
@@ -204,7 +204,7 @@ export const createInvoice = createServerFn({ method: "POST" })
   });
 
 export const getUnpaidInvoicesByMachine = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ machine: z.string() }))
+  .validator(z.object({ machine: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.invoice.findMany({
@@ -218,7 +218,7 @@ export const getUnpaidInvoicesByMachine = createServerFn({ method: "GET" })
   });
 
 export const getCurrentSessionOrders = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ machine: z.string(), startedAt: z.string() }))
+  .validator(z.object({ machine: z.string(), startedAt: z.string() }))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.invoice.findMany({
@@ -233,7 +233,7 @@ export const getCurrentSessionOrders = createServerFn({ method: "GET" })
   });
 
 export const settleInvoices = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     z.object({
       invoiceIds: z.array(z.string()),
       method: z.string(),

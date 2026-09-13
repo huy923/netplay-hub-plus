@@ -40,3 +40,4 @@ dist-ssr
 .aionrs
 .env
 prisma/dev.db
+package-lock.json
