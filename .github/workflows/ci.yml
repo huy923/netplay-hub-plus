@@ -48,3 +48,20 @@ jobs:
       - run: npx prisma db seed
       - run: npm run lint
       - run: npm test
+  docker:
+    runs-on: ubuntu-latest
+    env:
+      ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      DATABASE_URL: "file:./dev.db"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22.12.x" }
+      - run: npm install --legacy-peer-deps
+      - run: npx prisma generate
+      - run: npx prisma db push
+      - run: npx prisma db seed
+      - run: npm run lint
+      - run: npm test
+      - run: docker build -t my-app .
+      - run: docker run -p 8080:8080 my-app`
